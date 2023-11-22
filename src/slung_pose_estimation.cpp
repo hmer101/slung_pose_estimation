@@ -12,10 +12,10 @@ class ImageSubscriber : public rclcpp::Node {
 public:
     ImageSubscriber() : Node("image_subscriber") {
         // Get parameters
-        this->declare_parameter<int>("num_cameras", 3); // Default to 3
+        this->declare_parameter<int>("num_cameras", 3);
         this->get_parameter("num_cameras", this->num_cameras);
 
-        this->declare_parameter<int>("first_drone_num", 1); // Default to 1
+        this->declare_parameter<int>("first_drone_num", 1);
         this->get_parameter("first_drone_num", this->first_drone_num);
 
         // Subscribe to image topics
@@ -35,17 +35,6 @@ public:
                                             0.0, 0.0, 1.0);
             calc_cam_calib_matrix(1.396, 960, 540, cam_K);
             cam_Ks_.push_back(cam_K);
-
-            // Print the matrix
-            //std::cout << "Camera " << i << " Calibration Matrix:\n" << cam_K << "\n\n";
-            // Convert cv::Mat to string for logging
-
-            // std::stringstream ss;
-            // ss << cam_K;
-            // std::string matAsString = ss.str();
-
-            // // Log the matrix using ROS 2 logging
-            // RCLCPP_INFO(this->get_logger(), "Cal matrix %d: \n%s", i, matAsString.c_str());
 
         }
 
@@ -80,7 +69,7 @@ private:
     */
     // Callback function for image subscriber
     void image_callback_common(const sensor_msgs::msg::Image::SharedPtr msg, const int drone_id) {
-        RCLCPP_INFO(this->get_logger(), "Received image from drone %d", drone_id);
+        //RCLCPP_INFO(this->get_logger(), "Received image from drone %d", drone_id);
         
         // Convert ROS Image message to OpenCV image
         cv::Mat image = cv_bridge::toCvShare(msg, "bgr8")->image;
@@ -105,13 +94,6 @@ private:
                 break; // Assuming only one set of corners per marker ID
             }
         }
-
-        // Print detected marker IDs
-        // std::stringstream ss;
-        // for (const auto &id : markerIds) {
-        //     ss << id << " ";
-        // }
-        // RCLCPP_INFO(this->get_logger(), "Detected marker IDs: %s", ss.str().c_str());
 
 
         // Perform marker pose estimation if the target marker is detected
@@ -143,6 +125,11 @@ private:
                 cv::waitKey(30);
             }
         }
+
+        // Publish measured load pose
+        // HEREEREEEEEE
+
+
     }
 
 
