@@ -99,7 +99,7 @@ private:
         // Perform marker pose estimation if the target marker is detected
         if (!targetCorners.empty()) {
             // Define the 3D coordinates of marker corners (assuming square markers) in the marker's coordinate system
-            float markerEdgeLength = 0.04f;  // marker size in meters
+            float markerEdgeLength = 0.08f;  // marker size in meters
 
             std::vector<cv::Point3f> markerPoints = {
                 {-markerEdgeLength/2,  markerEdgeLength/2, 0.0f},
