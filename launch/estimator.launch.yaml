@@ -2,6 +2,6 @@ launch:
 
 - node:
     pkg: "slung_pose_estimation"
-    exec: "slung_pose_estimation"
+    exec: "slungPoseEstimation"
     name: "load_pose_estimator"
     namespace: "load_1"

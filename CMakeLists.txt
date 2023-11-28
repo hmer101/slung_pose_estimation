@@ -18,6 +18,14 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+# Include directories
+include_directories(
+  include
+  ${EIGEN3_INCLUDE_DIR}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -32,16 +40,27 @@ if(BUILD_TESTING)
 endif()
 
 
-# Declare a C++ executable
-add_executable(slung_pose_estimation src/slung_pose_estimation.cpp)
+# Declare libraries and executables
+add_library(State src/State.cpp)
+#add_executable(State src/State.cpp)
+add_executable(slung_pose_estimation src/slungPoseEstimation.cpp)
+
 
 # Specify libraries to link a library or executable target against
+target_link_libraries(slung_pose_estimation
+  State
+)
+
+ament_target_dependencies(State rclcpp tf2_geometry_msgs Eigen3)
 ament_target_dependencies(slung_pose_estimation rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV)
 
-# Install the executables
+
+# Install the libraries and executables
 install(TARGETS 
+  State
   slung_pose_estimation
   DESTINATION lib/${PROJECT_NAME})
+
 
 # Install launch files.
 install(DIRECTORY launch
