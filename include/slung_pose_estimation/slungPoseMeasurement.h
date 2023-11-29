@@ -1,6 +1,8 @@
 #ifndef SLUNG_POSE_MEASUREMENT_H
 #define SLUNG_POSE_MEASUREMENT_H
 
+#include <string>
+
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>

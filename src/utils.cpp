@@ -73,5 +73,24 @@ namespace utils {
         return pose_msg;
     }
 
+    tf2::Quaternion convert_rvec_to_quaternion(const cv::Vec3d& rvec) {
+        // Convert rotation vector to rotation matrix
+        cv::Mat rotMat;
+        cv::Rodrigues(rvec, rotMat);
+
+        // Convert OpenCV matrix to tf2 matrix
+        tf2::Matrix3x3 tf2_rotMat(
+            rotMat.at<double>(0, 0), rotMat.at<double>(0, 1), rotMat.at<double>(0, 2),
+            rotMat.at<double>(1, 0), rotMat.at<double>(1, 1), rotMat.at<double>(1, 2),
+            rotMat.at<double>(2, 0), rotMat.at<double>(2, 1), rotMat.at<double>(2, 2)
+        );
+
+        // Create a quaternion from the rotation matrix
+        tf2::Quaternion tf2_quaternion;
+        tf2_rotMat.getRotation(tf2_quaternion);
+
+        return tf2_quaternion;
+    }
+
 
 } // namespace utils

@@ -2,7 +2,9 @@
 #define UTILS_H
 
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 #include <Eigen/Dense>
+#include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -24,6 +26,7 @@ namespace utils {
 
     // CONVERSIONS
     geometry_msgs::msg::Pose convert_state_to_pose_msg(const State &state);
+    tf2::Quaternion convert_rvec_to_quaternion(const cv::Vec3d &rvec);
 }
 
 #endif // UTILS_H

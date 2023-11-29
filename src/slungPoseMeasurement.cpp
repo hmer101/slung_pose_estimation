@@ -6,7 +6,7 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->drone_id_ = utils::extract_id_from_name(this->ns_);
 
     this->declare_parameter<int>("show_markers", 0);
-    this->get_parameter("show_markers", this->show_markers_config_);
+    this->get_parameter("show_markers", this->show_markers_config_); 
 
     //VARIABLES
     this->state_marker_rel_camera_ = State("camera" + this->drone_id_, CS_type::XYZ);
@@ -34,6 +34,10 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     if (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1)){
         cv::namedWindow("Detected Markers Drone " + this->drone_id_, cv::WINDOW_AUTOSIZE);
     }
+
+    // Print info
+    RCLCPP_INFO(this->get_logger(), "MEASUREMENT NODE %d", this->drone_id_);
+    //RCLCPP_INFO(this->get_logger(), "Show markers config %d", this->show_markers_config_);
     
 }
 
@@ -89,18 +93,26 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         cv::solvePnP(markerPoints, targetCorners, this->cam_K_, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_IPPE_SQUARE); // cv::SOLVEPNP_ITERATIVE // Could alternatively use old cv::aruco::estimatePoseSingleMarkers (note this defaults to using ITERATIVE: https://github.com/opencv/opencv_contrib/blob/4.x/modules/aruco/include/opencv2/aruco.hpp)
 
         // Display the image (for drone 1) with detected markers
-        if (this->drone_id_ == 1){
+        if (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1)){
             // Draw the detected marker axes
             cv::drawFrameAxes(outputImage, this->cam_K_, distCoeffs, rvec, tvec, 0.1);
 
-            cv::imshow("Detected Markers", outputImage);
+            cv::imshow("Detected Markers Drone " + std::to_string(this->drone_id_), outputImage);
             cv::waitKey(30);
         }
+
+        // Convert marker pose to State object
+        this->state_marker_rel_camera_.setAtt(utils::convert_rvec_to_quaternion(rvec));
+        this->state_marker_rel_camera_.setPos(Eigen::Vector3d(tvec[0], tvec[1], tvec[2]));
+
+        // Publish measured marker pose rel camera
+        geometry_msgs::msg::Pose pose_msg = utils::convert_state_to_pose_msg(this->state_marker_rel_camera_);
+        this->pub_marker_rel_camera_->publish(pose_msg);
+
+        //RCLCPP_INFO(this->get_logger(), "Published marker pose rel drone %d", this->drone_id_);
     }
 
-    // Publish measured marker pose rel camera
-    geometry_msgs::msg::Pose pose_msg = utils::convert_state_to_pose_msg(this->state_marker_rel_camera_);
-    this->pub_marker_rel_camera_->publish(pose_msg);
+    
 }
 
 void SlungPoseMeasurement::calc_cam_calib_matrix(double fov_x, double img_width, double img_height, cv::Mat &cam_K) {
