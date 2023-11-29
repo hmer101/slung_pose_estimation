@@ -1,5 +1,5 @@
-#ifndef SLUNG_POSE_ESTIMATION_H
-#define SLUNG_POSE_ESTIMATION_H
+#ifndef SLUNG_POSE_MEASUREMENT_H
+#define SLUNG_POSE_MEASUREMENT_H
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -13,10 +13,10 @@
 
 #include "slung_pose_estimation/State.h"
 
-class SlungPoseEstimation : public rclcpp::Node {
+class SlungPoseMeasurement : public rclcpp::Node {
 public:
-    SlungPoseEstimation();
-    ~SlungPoseEstimation();
+    SlungPoseMeasurement();
+    ~SlungPoseMeasurement();
 
 private:
     // PARAMETERS
@@ -24,6 +24,9 @@ private:
     int first_drone_num;
     std::vector<cv::Mat> cam_Ks_;
     std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> sub_img_drones_;
+
+    // VARIABLES
+    State state_marker_rel_camera;
 
     // CALLBACKS
     void clbk_image_common(const sensor_msgs::msg::Image::SharedPtr msg, const int drone_id);
@@ -38,4 +41,4 @@ private:
     void calc_cam_calib_matrix(double fov_x, double img_width, double img_height, cv::Mat &cam_K);
 };
 
-#endif // SLUNG_POSE_ESTIMATION_H
+#endif // SLUNG_POSE_MEASUREMENT_H

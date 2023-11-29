@@ -18,12 +18,27 @@ enum class CS_type {
 class State {
 public:
     State(std::string frame, CS_type cs_type, Eigen::Vector3d pos = Eigen::Vector3d(0.0, 0.0, 0.0), tf2::Quaternion att = tf2::Quaternion(0.0, 0.0, 0.0, 1.0), Eigen::Vector3d vel = Eigen::Vector3d(0.0, 0.0, 0.0));
+    State() : State("default_frame", CS_type::ENU) {}; // Default constructor that delegates to the main constructor
 
     bool operator==(const State& other) const;
 
     State copy() const;
 
     std::string to_string() const;
+
+    // Getters
+    std::string getFrame() const { return frame; }
+    CS_type getCsType() const { return cs_type; }
+    Eigen::Vector3d getPos() const { return pos; }
+    tf2::Quaternion getAtt() const { return att; }
+    Eigen::Vector3d getVel() const { return vel; }
+
+    // Setters
+    void setFrame(const std::string& newFrame) { frame = newFrame; }
+    void setCsType(CS_type newCsType) { cs_type = newCsType; }
+    void setPos(const Eigen::Vector3d& newPos) { pos = newPos; }
+    void setAtt(const tf2::Quaternion& newAtt) { att = newAtt; }
+    void setVel(const Eigen::Vector3d& newVel) { vel = newVel; }
 
 private:
     std::string frame;

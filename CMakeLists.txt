@@ -13,6 +13,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
@@ -42,23 +43,34 @@ endif()
 
 # Declare libraries and executables
 add_library(State src/State.cpp)
+add_library(utils src/utils.cpp)
 #add_executable(State src/State.cpp)
-add_executable(slung_pose_estimation src/slungPoseEstimation.cpp)
+add_executable(slung_pose_measurement src/slungPoseMeasurement.cpp)
 
 
 # Specify libraries to link a library or executable target against
-target_link_libraries(slung_pose_estimation
+target_link_libraries(slung_pose_measurement
+  State
+  utils
+)
+
+target_link_libraries(utils
   State
 )
 
 ament_target_dependencies(State rclcpp tf2_geometry_msgs Eigen3)
-ament_target_dependencies(slung_pose_estimation rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV)
+ament_target_dependencies(utils rclcpp tf2_ros Eigen3 std_msgs tf2_geometry_msgs)
+ament_target_dependencies(slung_pose_measurement rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs)
+
+
+#include <tf2_ros/buffer.h>
 
 
 # Install the libraries and executables
-install(TARGETS 
+install(TARGETS
+  utils
   State
-  slung_pose_estimation
+  slung_pose_measurement
   DESTINATION lib/${PROJECT_NAME})
 
 

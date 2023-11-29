@@ -1,7 +1,29 @@
 launch:
 
+# - node:
+#     pkg: "slung_pose_estimation"
+#     exec: "slungPoseEstimation"
+#     name: "load_pose_estimator"
+#     namespace: "load_1"
+
+## MEASUREMENT
+# Write python launchfile like in drones to start the same number of measurements as drones
 - node:
     pkg: "slung_pose_estimation"
-    exec: "slungPoseEstimation"
-    name: "load_pose_estimator"
-    namespace: "load_1"
+    exec: "slung_pose_measurement"
+    name: "slung_pose_measure_1"
+    namespace: "/x500_1"
+
+- node:
+    pkg: "slung_pose_estimation"
+    exec: "slung_pose_measurement"
+    name: "slung_pose_measure_2"
+    namespace: "/x500_2"
+
+- node:
+    pkg: "slung_pose_estimation"
+    exec: "slung_pose_measurement"
+    name: "slung_pose_measure_3"
+    namespace: "/x500_3"
+
+## ESTIMATION

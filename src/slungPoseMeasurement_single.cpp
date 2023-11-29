@@ -1,6 +1,6 @@
-#include "slung_pose_estimation/slungPoseEstimation.h"
+#include "slung_pose_estimation/slungPoseMeasurement.h"
 
-SlungPoseEstimation::SlungPoseEstimation() : Node("slung_pose_estimator") {
+SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure") {
     //PARAMETERS
     this->declare_parameter<int>("num_cameras", 3);
     this->get_parameter("num_cameras", this->num_cameras);
@@ -37,12 +37,12 @@ SlungPoseEstimation::SlungPoseEstimation() : Node("slung_pose_estimator") {
 }
 
 
-SlungPoseEstimation::~SlungPoseEstimation() {
+SlungPoseMeasurement::~SlungPoseMeasurement() {
     // Destroy the window when the object is destroyed
     cv::destroyWindow("Detected Markers");
 }
 
-void SlungPoseEstimation::clbk_image_common(const sensor_msgs::msg::Image::SharedPtr msg, const int drone_id) {
+void SlungPoseMeasurement::clbk_image_common(const sensor_msgs::msg::Image::SharedPtr msg, const int drone_id) {
     //RCLCPP_INFO(this->get_logger(), "Received image from drone %d", drone_id);
         
     // Convert ROS Image message to OpenCV image
@@ -102,7 +102,7 @@ void SlungPoseEstimation::clbk_image_common(const sensor_msgs::msg::Image::Share
     // Publish measured load pose
 }
 
-void SlungPoseEstimation::calc_cam_calib_matrix(double fov_x, double img_width, double img_height, cv::Mat &cam_K) {
+void SlungPoseMeasurement::calc_cam_calib_matrix(double fov_x, double img_width, double img_height, cv::Mat &cam_K) {
     // Calculate the aspect ratio
     double aspect_ratio = img_width / img_height;
 
@@ -125,7 +125,7 @@ void SlungPoseEstimation::calc_cam_calib_matrix(double fov_x, double img_width, 
 
 int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<SlungPoseEstimation>();
+    auto node = std::make_shared<SlungPoseMeasurement>();
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
