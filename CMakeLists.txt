@@ -63,21 +63,14 @@ target_link_libraries(utils
   State
 )
 
-target_link_libraries(tester INTERFACE
-  kalmanif #::kalmanif
+target_link_libraries(tester #INTERFACE
+  kalmanif::kalmanif
+  State
 )
-# target_link_libraries(tester
-#   State
-# )
-#target_link_libraries(tester INTERFACE kalmanif::kalmanif)
-
 
 ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
 ament_target_dependencies(utils rclcpp tf2_ros Eigen3 std_msgs tf2_geometry_msgs OpenCV)
 ament_target_dependencies(slung_pose_measurement rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs)
-
-
-#include <tf2_ros/buffer.h>
 
 
 # Install the libraries and executables

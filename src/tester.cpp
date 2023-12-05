@@ -1,4 +1,4 @@
-//#include "slung_pose_estimation/State.h"
+#include "slung_pose_estimation/State.h"
 #include <iostream>
 #include <kalmanif/kalmanif.h>
 
@@ -35,7 +35,9 @@ int main() {
     // std::cout << "Pitch: " << pitch << std::endl;
     // std::cout << "Roll: " << roll << std::endl;
 
-    std::cout << "TEST" << std::endl;
+    // DO SOME KALMAN FILTER STUFF HERE!!!!
+
+    
 
     return 0;
 }
