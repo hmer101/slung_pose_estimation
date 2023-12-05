@@ -12,6 +12,17 @@ bool State::operator==(const State& other) const {
            vel.isApprox(other.vel);
 }
 
+// Operator - implementation. 
+State State::operator-(const State& other) const {
+    // Note that subtractions can only be performed on states with the same frame and CS type
+    if (frame != other.frame || cs_type != other.cs_type) {
+        throw std::invalid_argument("Subtraction can only be performed on states with the same frame and CS type");
+    }else {
+        return State(frame, cs_type, pos - other.pos, other.att*att.inverse(), vel - other.vel);
+    }
+    
+}
+
 // Copy method implementation
 State State::copy() const {
     return State(frame, cs_type, pos, att, vel);

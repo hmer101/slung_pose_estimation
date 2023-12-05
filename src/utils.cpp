@@ -2,6 +2,23 @@
 
 namespace utils {
     // TRANSFORMS
+    std::optional<geometry_msgs::msg::TransformStamped> lookup_tf( 
+        const std::string& target_frame, 
+        const std::string& source_frame,
+        tf2_ros::Buffer& tfBuffer,
+        const rclcpp::Time& time, 
+        rclcpp::Logger logger) 
+    {
+        try {
+            auto transform = tfBuffer.lookupTransform(target_frame, source_frame, time);
+            return transform;
+        } catch (tf2::TransformException &ex) {
+            RCLCPP_ERROR(logger, "Failed to find transform: %s", ex.what());
+            return std::nullopt;
+        }
+    }
+
+
     Eigen::Vector3d transform_position(const Eigen::Vector3d& p_BA, const Eigen::Vector3d& p_CB, const tf2::Quaternion& q_CB) {
         tf2::Quaternion p_BA_quat(0, p_BA.x(), p_BA.y(), p_BA.z());
         tf2::Quaternion p_BA_rotated = q_CB * p_BA_quat * q_CB.inverse();
@@ -14,8 +31,8 @@ namespace utils {
         return q_CA;
     }
 
-    std::shared_ptr<State> transform_frames(const State& state, const std::string& frame2_name, tf2_ros::Buffer& tf_buffer, rclcpp::Logger logger) {
-        std::shared_ptr<State> state2 = std::make_shared<State>(frame2_name, CS_type::ENU);
+    std::shared_ptr<State> transform_frames(const State& state, const std::string& frame2_name, tf2_ros::Buffer& tf_buffer, rclcpp::Logger logger, CS_type cs_out_type) {
+        std::shared_ptr<State> state2 = std::make_shared<State>(frame2_name, cs_out_type); //CS_type::ENU
 
         // Find the transform
         geometry_msgs::msg::TransformStamped tf_f1_rel_f2;

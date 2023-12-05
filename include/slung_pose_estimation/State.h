@@ -4,7 +4,9 @@
 #include <string>
 #include <sstream>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2/LinearMath/Matrix3x3.h>
 #include <Eigen/Dense>
+
 
 // Co-ordinate system enum
 enum class CS_type {
@@ -21,6 +23,7 @@ public:
     State() : State("default_frame", CS_type::ENU) {}; // Default constructor that delegates to the main constructor
 
     bool operator==(const State& other) const;
+    State operator-(const State &other) const;
 
     State copy() const;
 
@@ -31,6 +34,11 @@ public:
     CS_type getCsType() const { return cs_type; }
     Eigen::Vector3d getPos() const { return pos; }
     tf2::Quaternion getAtt() const { return att; }
+    void getAttYPR(double& yaw, double& pitch, double& roll) { // Return YPR around ZYX axes
+        tf2::Matrix3x3 m(att);
+        m.getEulerYPR(yaw, pitch, roll);
+    }
+
     Eigen::Vector3d getVel() const { return vel; }
 
     // Setters

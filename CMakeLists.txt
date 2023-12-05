@@ -6,6 +6,8 @@ project(slung_pose_estimation)
 #   set(CMAKE_CXX_STANDARD 14)
 # endif()
 
+#set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -14,6 +16,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
@@ -21,6 +24,7 @@ find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(kalmanif REQUIRED)
 
 # Include directories
 include_directories(
@@ -46,6 +50,7 @@ add_library(State src/State.cpp)
 add_library(utils src/utils.cpp)
 #add_executable(State src/State.cpp)
 add_executable(slung_pose_measurement src/slungPoseMeasurement.cpp)
+add_executable(tester src/tester.cpp)
 
 
 # Specify libraries to link a library or executable target against
@@ -58,7 +63,16 @@ target_link_libraries(utils
   State
 )
 
-ament_target_dependencies(State rclcpp tf2_geometry_msgs Eigen3)
+target_link_libraries(tester INTERFACE
+  kalmanif #::kalmanif
+)
+# target_link_libraries(tester
+#   State
+# )
+#target_link_libraries(tester INTERFACE kalmanif::kalmanif)
+
+
+ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
 ament_target_dependencies(utils rclcpp tf2_ros Eigen3 std_msgs tf2_geometry_msgs OpenCV)
 ament_target_dependencies(slung_pose_measurement rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs)
 
@@ -70,6 +84,7 @@ ament_target_dependencies(slung_pose_measurement rclcpp std_msgs sensor_msgs cv_
 install(TARGETS
   utils
   State
+  tester
   slung_pose_measurement
   DESTINATION lib/${PROJECT_NAME})
 

@@ -4,6 +4,8 @@
 #include <string>
 
 #include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_listener.h>
+
 #include <sensor_msgs/msg/image.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include "std_msgs/msg/string.hpp"
@@ -32,12 +34,16 @@ private:
 
     std::string ns_; // Namespace of the node
     int drone_id_; // ID of the drone this node is running on
+    int load_id_;
     int show_markers_config_; // 0 = No, 1 = Yes all, 2 = Drone 1 only
 
     cv::Mat cam_K_;
 
     // VARIABLES
     State state_marker_rel_camera_;
+
+    std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
     // SUBSCRIBERS
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img_drone_;
