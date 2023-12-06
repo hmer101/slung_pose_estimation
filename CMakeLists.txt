@@ -51,6 +51,7 @@ add_library(utils src/utils.cpp)
 #add_executable(State src/State.cpp)
 add_executable(slung_pose_measurement src/slungPoseMeasurement.cpp)
 add_executable(tester src/tester.cpp)
+add_executable(slung_pose_estimation src/slungPoseEstimation.cpp)
 
 
 # Specify libraries to link a library or executable target against
@@ -68,6 +69,11 @@ target_link_libraries(tester #INTERFACE
   State
 )
 
+target_link_libraries(slung_pose_estimation
+  kalmanif::kalmanif
+)
+
+
 ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
 ament_target_dependencies(utils rclcpp tf2_ros Eigen3 std_msgs tf2_geometry_msgs OpenCV)
 ament_target_dependencies(slung_pose_measurement rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs)
@@ -79,6 +85,7 @@ install(TARGETS
   State
   tester
   slung_pose_measurement
+  slung_pose_estimation
   DESTINATION lib/${PROJECT_NAME})
 
 
