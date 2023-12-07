@@ -48,7 +48,7 @@ endif()
 # Declare libraries and executables
 add_library(State src/State.cpp)
 add_library(utils src/utils.cpp)
-#add_executable(State src/State.cpp)
+
 add_executable(slung_pose_measurement src/slungPoseMeasurement.cpp)
 add_executable(tester src/tester.cpp)
 add_executable(slung_pose_estimation src/slungPoseEstimation.cpp)
@@ -66,11 +66,13 @@ target_link_libraries(utils
 
 target_link_libraries(tester #INTERFACE
   kalmanif::kalmanif
-  State
+  #State
+  utils
 )
 
 target_link_libraries(slung_pose_estimation
   kalmanif::kalmanif
+  utils
 )
 
 
@@ -92,6 +94,12 @@ install(TARGETS
 # Install launch files.
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/
+)
+
+# Install data
+install(DIRECTORY
+    data
+    DESTINATION share/${PROJECT_NAME}/
 )
 
 # Export dependencies

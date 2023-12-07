@@ -8,10 +8,12 @@
 #include "utils_estimation/plots.h"
 #include "utils_estimation/utils.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include "slung_pose_estimation/datatypes.h"
+#include "slung_pose_estimation/utils.h"
+
 #include <manif/SE3.h>
-
 #include <iostream>
-
 #include <vector>
 
 using namespace kalmanif;
@@ -45,6 +47,8 @@ int main(){ //int argc, char* argv[]) {
   std::cout << "AFTER PRINT" <<"\n";
 
   // START CONFIGURATION
+  std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
+  std::string data_file_path = package_share_directory + "/data/data_vnav_0.01.txt";
 
   constexpr double eot = 15;                 //350 s
   constexpr double dt = 0.01;                 // s
@@ -68,7 +72,7 @@ int main(){ //int argc, char* argv[]) {
   Array6d      u_sigmas;
   Matrix6d     U;
 
-  u_nom    << 0.1, 0.0, 0.05, 0.0, 0, 0.05;
+  u_nom    << 0.1, 0.0, 0.05, 0.0, 0, 0.05; // TODO: Update these
   u_sigmas.head<3>().setConstant(std::sqrt(var_odometry));
   u_sigmas.tail<3>().setConstant(std::sqrt(var_gyro));
   U        = (u_sigmas * u_sigmas * 1./dt).matrix().asDiagonal();
@@ -81,7 +85,7 @@ int main(){ //int argc, char* argv[]) {
   y_sigmas << 0.01, 0.01, 0.01;
   R        = (y_sigmas * y_sigmas).matrix().asDiagonal();
 
-  std::vector<MeasurementModel> measurement_models = {
+  std::vector<MeasurementModel> measurement_models = {    // TODO: Update these
     MeasurementModel(Landmark(2.0,  0.0,  0.0), R),
     MeasurementModel(Landmark(3.0, -1.0, -1.0), R),
     MeasurementModel(Landmark(2.0, -1.0,  1.0), R),
@@ -107,7 +111,7 @@ int main(){ //int argc, char* argv[]) {
 
   Vector6d n = randn<Array6d>();
   Vector6d X_init_noise = state_cov_init.cwiseSqrt() * n;
-  State X_init = X_simulation + State::Tangent(X_init_noise);
+  State X_init = X_simulation + State::Tangent(X_init_noise);    // TODO: Update these????
 
   EKF ekf;
   ekf.setState(X_init);
@@ -125,20 +129,121 @@ int main(){ //int argc, char* argv[]) {
     eot/dt, "UNFI", "EKF", "UKFM", "ERTS", "URTSM"
   );
 
+  // END CONFIGURATION
+
+
+  // BEGIN TEMPORAL LOOP
+  // Read testing data from file
+  float t;
+  StateData load_data;
+  std::vector<StateData> tension_data;
+  std::vector<StateData> drones_data;
+
+  std::ifstream file(data_file_path);
+  std::string line;
+
+  if (!file.is_open()) {
+      std::cerr << "Error opening file." << std::endl;
+      return false;
+  }
+
+  while (std::getline(file, line))
+  {   
+      /// simulate noise
+      u_noise = randn<Array6d>(u_sigmas / sqrtdt); // control noise
+      u_noisy = u_nom + u_noise;                   // noisy control
+
+      u_simu   = u_nom   * dt;
+      u_est    = u_noisy * dt;
+      u_unfilt = u_noisy * dt;
+
+
+
+      // HEREREEEEEE
+
+
+      /// first we move - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      X_simulation = system_model(X_simulation, u_simu);
+
+      // I. Simulation
+      // GET DATA
+      std::istringstream iss(line);
+      std::string segment;
+      
+      // Read time
+      std::getline(iss, segment, ' ');
+      t = std::stof(segment);
+
+      // Read load state
+      // x
+      std::getline(iss, segment, ' ');
+      load_data.x = utils::splitAndConvert(segment, ',');
+
+      // x_dot and x_ddot
+      std::getline(iss, segment, ' ');
+      std::getline(iss, segment, ' '); 
+      
+      // theta
+      std::getline(iss, segment, ' ');
+      load_data.theta = utils::splitAndConvert(segment, ',');
+
+      // theta_dot
+      std::getline(iss, segment, ' ');
+      load_data.theta_dot = utils::splitAndConvert(segment, ',');
+
+      // theta_ddot
+      std::getline(iss, segment, ' ');
+
+      // std::cout << "t: " << t << std::endl;
+      // std::cout << "load_x : " << load_data.x[0] << " " << load_data.x[1] << " " << load_data.x[2] << std::endl;
+      // std::cout << "load_theta : " << load_data.theta[0] << " " << load_data.theta[1] << " " << load_data.theta[2] << std::endl;
+      // std::cout << "load_theta_dot : " << load_data.theta_dot[0] << " " << load_data.theta_dot[1] << " " << load_data.theta_dot[2] << std::endl;
+
+      // Read tension vectors
+      for (int i = 0; i < 3; i++)
+      {
+          std::getline(iss, segment, ' ');
+          StateData tension;
+          tension.x = utils::splitAndConvert(segment, ',');
+          tension_data.push_back(tension);
+
+          //std::cout << "tension: " << tension_data[i].x[0] << " " << tension_data[i].x[1] << " " << tension_data[i].x[2] << std::endl;
+      }
+
+      // Read drone states
+      for (int i = 0; i < 3; i++)
+      {   
+          // x
+          std::getline(iss, segment, ' ');
+          StateData drone;
+          drone.x = utils::splitAndConvert(segment, ',');
+          
+          // x_dot and x_ddot
+          std::getline(iss, segment, ' ');
+          std::getline(iss, segment, ' ');
+
+          // theta
+          std::getline(iss, segment, ' ');
+          drone.theta = utils::splitAndConvert(segment, ',');
+
+          // theta_dot and theta_ddot
+          std::getline(iss, segment, ' ');
+          std::getline(iss, segment, ' ');
+
+          // Store drone data
+          drones_data.push_back(drone);
+          //std::cout << "drone: " << drones_data[i].x[0] << " " << drones_data[i].x[1] << " " << drones_data[i].x[2] << std::endl;
+          //std::cout << "drone_theta: " << drones_data[i].theta[0] << " " << drones_data[i].theta[1] << " " << drones_data[i].theta[2] << std::endl;
+      }
+
+
+    //
+
+  //}
+
   // Make T steps. Measure up to K landmarks each time.
-  for (double t = 0; t < eot; t += dt) {
-    // I. Simulation
-
-    /// simulate noise
-    u_noise = randn<Array6d>(u_sigmas / sqrtdt); // control noise
-    u_noisy = u_nom + u_noise;                   // noisy control
-
-    u_simu   = u_nom   * dt;
-    u_est    = u_noisy * dt;
-    u_unfilt = u_noisy * dt;
-
-    /// first we move - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    X_simulation = system_model(X_simulation, u_simu);
+  //for (double t = 0; t < eot; t += dt) {
+    
 
     /// then we measure all landmarks - - - - - - - - - - - - - - - - - - - -
     for (std::size_t i = 0; i < measurement_models.size(); ++i)  {
@@ -190,8 +295,8 @@ int main(){ //int argc, char* argv[]) {
 
     // if (int(t*100) % int(100./gps_freq) == 0) {
 
-      // gps measurement model
-      // auto gps_measurement_model = DummyGPSMeasurementModel<State>(R_gps);
+      // gps measurement model // PERHAPS CAN USE THIS FOR DRONE MEASUREMENTS???
+      // auto gps_measurement_model = DummyGPSMeasurementModel<State>(R_gps); 
 
       // y_gps = gps_measurement_model(X_simulation);                  // gps measurement, before adding noise
 

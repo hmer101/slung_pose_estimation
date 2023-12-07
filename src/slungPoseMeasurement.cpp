@@ -13,7 +13,7 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
 
 
     // VARIABLES
-    this->state_marker_rel_camera_ = State("camera" + std::to_string(this->drone_id_), CS_type::XYZ);
+    this->state_marker_rel_camera_ = droneState::State("camera" + std::to_string(this->drone_id_), droneState::CS_type::XYZ);
 
     this->tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock()); //tf2_ros::Buffer(std::make_shared<rclcpp::Clock>());
     this->tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*(this->tf_buffer_));
@@ -129,7 +129,7 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
 
         // MEASURED marker rel drone
         // Transform the marker pose to the drone frame
-        auto state_marker_rel_drone = utils::transform_frames(state_marker_rel_camera_, "drone" + std::to_string(this->drone_id_), *this->tf_buffer_, this->get_logger(), CS_type::XYZ);
+        auto state_marker_rel_drone = utils::transform_frames(state_marker_rel_camera_, "drone" + std::to_string(this->drone_id_), *this->tf_buffer_, this->get_logger(), droneState::CS_type::XYZ);
 
 
         // HEREREEEEEEE - Below doesn't seem to be the issue. state_market_rel_drone is wrong but /marker_rel_camera is (almost) correct <- OFFSET
@@ -143,7 +143,7 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
 
         if (load_gt_rel_drone_gt && (state_marker_rel_drone != nullptr) && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
             // GROUND TRUTH marker rel drone
-            auto state_marker_rel_drone_gt = State("drone" + std::to_string(this->drone_id_) + "_gt", CS_type::XYZ);
+            auto state_marker_rel_drone_gt = droneState::State("drone" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
             state_marker_rel_drone_gt.setPos(Eigen::Vector3d(load_gt_rel_drone_gt->transform.translation.x, load_gt_rel_drone_gt->transform.translation.y, load_gt_rel_drone_gt->transform.translation.z));
             state_marker_rel_drone_gt.setAtt(tf2::Quaternion(load_gt_rel_drone_gt->transform.rotation.x, load_gt_rel_drone_gt->transform.rotation.y, load_gt_rel_drone_gt->transform.rotation.z, load_gt_rel_drone_gt->transform.rotation.w));
 

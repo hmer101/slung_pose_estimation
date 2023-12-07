@@ -31,8 +31,8 @@ namespace utils {
         return q_CA;
     }
 
-    std::shared_ptr<State> transform_frames(const State& state, const std::string& frame2_name, tf2_ros::Buffer& tf_buffer, rclcpp::Logger logger, CS_type cs_out_type) {
-        std::shared_ptr<State> state2 = std::make_shared<State>(frame2_name, cs_out_type); //CS_type::ENU
+    std::shared_ptr<droneState::State> transform_frames(const droneState::State& state, const std::string& frame2_name, tf2_ros::Buffer& tf_buffer, rclcpp::Logger logger, droneState::CS_type cs_out_type) {
+        std::shared_ptr<droneState::State> state2 = std::make_shared<droneState::State>(frame2_name, cs_out_type); //CS_type::ENU
 
         // Find the transform
         geometry_msgs::msg::TransformStamped tf_f1_rel_f2;
@@ -71,9 +71,22 @@ namespace utils {
             return -1;
         }
     }
+
+    // Helper function to split a string by a delimiter and convert to float
+    std::vector<float> splitAndConvert(const std::string& s, char delimiter) {
+        std::vector<float> result;
+        std::istringstream ss(s);
+        std::string token;
+
+        while (std::getline(ss, token, delimiter)) {
+            result.push_back(std::stof(token));
+        }
+
+        return result;
+    }
     
     // CONVERSIONS
-    geometry_msgs::msg::Pose convert_state_to_pose_msg(const State& state) {
+    geometry_msgs::msg::Pose convert_state_to_pose_msg(const droneState::State& state) {
         geometry_msgs::msg::Pose pose_msg;
 
         // Set position

@@ -9,7 +9,7 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure") {
     this->get_parameter("first_drone_num", this->first_drone_num);
 
     //VARIABLES
-    //this->load_rel_ = State(f'{self.get_name()}_init', CS_type.ENU)
+    //this->load_rel_ = droneState::State(f'{self.get_name()}_init', CS_type.ENU)
 
     // SUBSCRIBERS
     // Subscribe to the image topic for each drone
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 //         this->get_parameter("first_drone_num", this->first_drone_num);
 
 //         //VARIABLES
-//         //this->load_rel_ = State(f'{self.get_name()}_init', CS_type.ENU)
+//         //this->load_rel_ = droneState::State(f'{self.get_name()}_init', CS_type.ENU)
 
        
 

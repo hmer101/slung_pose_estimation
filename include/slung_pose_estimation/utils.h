@@ -14,8 +14,6 @@
 
 #include "slung_pose_estimation/State.h"
 
-// Forward declaration
-//class State;
 
 namespace utils {
     // TRANSFORMS
@@ -24,13 +22,14 @@ namespace utils {
     Eigen::Vector3d transform_position(const Eigen::Vector3d& p_BA, const Eigen::Vector3d& p_CB, const tf2::Quaternion& q_CB);
     tf2::Quaternion transform_orientation(const tf2::Quaternion& q_BA, const tf2::Quaternion& q_CB);
     //std::shared_ptr<State> transform_frames(const State& state, const std::string& frame2_name, tf2_ros::Buffer& tf_buffer, rclcpp::Logger logger);
-    std::shared_ptr<State> transform_frames(const State &state, const std::string &frame2_name, tf2_ros::Buffer &tf_buffer, rclcpp::Logger logger, CS_type cs_out_type = CS_type::XYZ);
+    std::shared_ptr<droneState::State> transform_frames(const droneState::State &state, const std::string &frame2_name, tf2_ros::Buffer &tf_buffer, rclcpp::Logger logger, droneState::CS_type cs_out_type = droneState::CS_type::XYZ);
 
     // STRING HANDLING
     int extract_id_from_name(const std::string &input);
+    std::vector<float> splitAndConvert(const std::string &s, char delimiter);
 
     // CONVERSIONS
-    geometry_msgs::msg::Pose convert_state_to_pose_msg(const State &state);
+    geometry_msgs::msg::Pose convert_state_to_pose_msg(const droneState::State &state);
     tf2::Quaternion convert_rvec_to_quaternion(const cv::Vec3d &rvec);
 }
 

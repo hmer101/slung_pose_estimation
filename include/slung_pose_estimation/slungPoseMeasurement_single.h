@@ -26,7 +26,7 @@ private:
     std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> sub_img_drones_;
 
     // VARIABLES
-    State state_marker_rel_camera;
+    droneState::State state_marker_rel_camera;
 
     // CALLBACKS
     void clbk_image_common(const sensor_msgs::msg::Image::SharedPtr msg, const int drone_id);

@@ -40,7 +40,7 @@ private:
     cv::Mat cam_K_;
 
     // VARIABLES
-    State state_marker_rel_camera_;
+    droneState::State state_marker_rel_camera_;
 
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
