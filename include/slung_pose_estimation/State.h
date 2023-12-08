@@ -42,6 +42,13 @@ namespace droneState{
             tf2::Matrix3x3 m(att);
             m.getEulerYPR(yaw, pitch, roll);
         }
+        Eigen::Vector3d getAttYPR() const{ // Return YPR around ZYX axes
+            tf2::Matrix3x3 m(att);
+            double yaw, pitch, roll;
+            m.getEulerYPR(yaw, pitch, roll);
+
+            return Eigen::Vector3d(roll, pitch, yaw);
+        }
 
         Eigen::Vector3d getVel() const { return vel; }
 

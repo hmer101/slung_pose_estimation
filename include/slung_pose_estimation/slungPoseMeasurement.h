@@ -58,7 +58,7 @@ private:
     void clbk_image_received(const sensor_msgs::msg::Image::SharedPtr msg);
     
     // HELPERS
-    void log_pnp_error(const std::string &filename, double distTrans, double distAngGeo);
+    void log_pnp_error(const std::string &filename, const droneState::State &state_marker_rel_cam_gt, const droneState::State &state_marker_rel_cam);
 
     // Calculate the camera calibration matrix
     // Inputs: fov_x - horizontal field of view in radians
