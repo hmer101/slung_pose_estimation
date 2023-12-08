@@ -75,6 +75,10 @@ target_link_libraries(slung_pose_estimation
   utils
 )
 
+target_link_libraries(State
+  utils
+)
+
 
 ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
 ament_target_dependencies(utils rclcpp tf2_ros Eigen3 std_msgs tf2_geometry_msgs OpenCV)

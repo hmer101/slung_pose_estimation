@@ -36,6 +36,7 @@ private:
     int drone_id_; // ID of the drone this node is running on
     int load_id_;
     int show_markers_config_; // 0 = No, 1 = Yes all, 2 = Drone 1 only
+    rclcpp::Time start_time_;
 
     cv::Mat cam_K_;
 
@@ -44,6 +45,8 @@ private:
 
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+
+    std::string logging_file_path_;
 
     // SUBSCRIBERS
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img_drone_;
@@ -55,6 +58,7 @@ private:
     void clbk_image_received(const sensor_msgs::msg::Image::SharedPtr msg);
     
     // HELPERS
+    void log_pnp_error(const std::string &filename, double distTrans, double distAngGeo);
 
     // Calculate the camera calibration matrix
     // Inputs: fov_x - horizontal field of view in radians

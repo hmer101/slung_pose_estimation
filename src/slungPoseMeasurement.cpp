@@ -1,4 +1,7 @@
 #include "slung_pose_estimation/slungPoseMeasurement.h"
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <fstream>
+
 
 SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp::NodeOptions().use_global_arguments(true)) {
     // PARAMETERS
@@ -11,6 +14,8 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->declare_parameter<int>("load_id", 1);
     this->get_parameter("load_id", this->load_id_);
 
+    std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
+    this->logging_file_path_ = package_share_directory + "/data/pnp_errors.txt";
 
     // VARIABLES
     this->state_marker_rel_camera_ = droneState::State("camera" + std::to_string(this->drone_id_), droneState::CS_type::XYZ);
@@ -32,6 +37,9 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
 
 
     // SETUP
+    //rclcpp::Clock clock(RCL_SYSTEM_TIME);
+    this->start_time_ = this->get_clock()->now();
+
     // Get the camera calibration matrix for the camera (TODO: Replace with subscription to camera_info topic)
     this->cam_K_ = (cv::Mat_<double>(3, 3) << 1.0, 0.0, 0.0,
                                         0.0, 1.0, 0.0,
@@ -99,7 +107,7 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
 
         // Using PnP, estimate pose T^c_m (marker pose relative to camera) for the target marker
         cv::Vec3d rvec, tvec;
-        cv::solvePnP(markerPoints, targetCorners, this->cam_K_, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_IPPE_SQUARE); // cv::SOLVEPNP_ITERATIVE // Could alternatively use old cv::aruco::estimatePoseSingleMarkers (note this defaults to using ITERATIVE: https://github.com/opencv/opencv_contrib/blob/4.x/modules/aruco/include/opencv2/aruco.hpp)
+        cv::solvePnP(markerPoints, targetCorners, this->cam_K_, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_P3P); // cv::SOLVEPNP_IPPE_SQUARE // cv::SOLVEPNP_ITERATIVE // Could alternatively use old cv::aruco::estimatePoseSingleMarkers (note this defaults to using ITERATIVE: https://github.com/opencv/opencv_contrib/blob/4.x/modules/aruco/include/opencv2/aruco.hpp)
 
         // Display the image (for drone 1) with detected markers
         if (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1)){
@@ -125,11 +133,12 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         this->pub_marker_rel_camera_->publish(pose_msg);
 
         // Evaluate the marker pose estimation
-        auto load_gt_rel_drone_gt = utils::lookup_tf("drone" + std::to_string(this->drone_id_) + "_gt","load" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
+        //auto load_gt_rel_drone_gt = utils::lookup_tf("drone" + std::to_string(this->drone_id_) + "_gt","load" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
+        auto marker_gt_rel_cam_gt = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt","load_marker" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
 
         // MEASURED marker rel drone
         // Transform the marker pose to the drone frame
-        auto state_marker_rel_drone = utils::transform_frames(state_marker_rel_camera_, "drone" + std::to_string(this->drone_id_), *this->tf_buffer_, this->get_logger(), droneState::CS_type::XYZ);
+        //auto state_marker_rel_drone = utils::transform_frames(state_marker_rel_camera_, "drone" + std::to_string(this->drone_id_), *this->tf_buffer_, this->get_logger(), droneState::CS_type::XYZ);
 
 
         // HEREREEEEEEE - Below doesn't seem to be the issue. state_market_rel_drone is wrong but /marker_rel_camera is (almost) correct <- OFFSET
@@ -140,56 +149,89 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         // RCLCPP_INFO(this->get_logger(), "camera_rel_drone_tf: %f %f %f", camera_rel_drone_tf->transform.translation.x, camera_rel_drone_tf->transform.translation.y, camera_rel_drone_tf->transform.translation.z);
 
 
-
-        if (load_gt_rel_drone_gt && (state_marker_rel_drone != nullptr) && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
+        if (marker_gt_rel_cam_gt && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) { //(load_gt_rel_drone_gt && (state_marker_rel_drone != nullptr) && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
             // GROUND TRUTH marker rel drone
-            auto state_marker_rel_drone_gt = droneState::State("drone" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
-            state_marker_rel_drone_gt.setPos(Eigen::Vector3d(load_gt_rel_drone_gt->transform.translation.x, load_gt_rel_drone_gt->transform.translation.y, load_gt_rel_drone_gt->transform.translation.z));
-            state_marker_rel_drone_gt.setAtt(tf2::Quaternion(load_gt_rel_drone_gt->transform.rotation.x, load_gt_rel_drone_gt->transform.rotation.y, load_gt_rel_drone_gt->transform.rotation.z, load_gt_rel_drone_gt->transform.rotation.w));
+            // auto state_marker_rel_drone_gt = droneState::State("drone" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
+            // state_marker_rel_drone_gt.setPos(Eigen::Vector3d(load_gt_rel_drone_gt->transform.translation.x, load_gt_rel_drone_gt->transform.translation.y, load_gt_rel_drone_gt->transform.translation.z));
+            // state_marker_rel_drone_gt.setAtt(tf2::Quaternion(load_gt_rel_drone_gt->transform.rotation.x, load_gt_rel_drone_gt->transform.rotation.y, load_gt_rel_drone_gt->transform.rotation.z, load_gt_rel_drone_gt->transform.rotation.w));
 
-            // Add marker offset from load
-            auto marker_rel_load = utils::lookup_tf("load" + std::to_string(this->load_id_), "load_marker" + std::to_string(this->load_id_), *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
+            // // Add marker offset from load
+            // auto marker_rel_load = utils::lookup_tf("load" + std::to_string(this->load_id_), "load_marker" + std::to_string(this->load_id_), *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
 
-            // Position
-            state_marker_rel_drone_gt.setPos(state_marker_rel_drone_gt.getPos() + Eigen::Vector3d(marker_rel_load->transform.translation.x, marker_rel_load->transform.translation.y, marker_rel_load->transform.translation.z));
+            // // Position
+            // state_marker_rel_drone_gt.setPos(state_marker_rel_drone_gt.getPos() + Eigen::Vector3d(marker_rel_load->transform.translation.x, marker_rel_load->transform.translation.y, marker_rel_load->transform.translation.z));
 
-            // Orientation 
-            tf2::Quaternion q_load_gt_rel_drone_gt = tf2::Quaternion(state_marker_rel_drone_gt.getAtt().x(), state_marker_rel_drone_gt.getAtt().y(), state_marker_rel_drone_gt.getAtt().z(), state_marker_rel_drone_gt.getAtt().w());
-            tf2::Quaternion q_marker_rel_load = tf2::Quaternion(marker_rel_load->transform.rotation.x, marker_rel_load->transform.rotation.y, marker_rel_load->transform.rotation.z, marker_rel_load->transform.rotation.w);
+            // // Orientation 
+            // tf2::Quaternion q_load_gt_rel_drone_gt = tf2::Quaternion(state_marker_rel_drone_gt.getAtt().x(), state_marker_rel_drone_gt.getAtt().y(), state_marker_rel_drone_gt.getAtt().z(), state_marker_rel_drone_gt.getAtt().w());
+            // tf2::Quaternion q_marker_rel_load = tf2::Quaternion(marker_rel_load->transform.rotation.x, marker_rel_load->transform.rotation.y, marker_rel_load->transform.rotation.z, marker_rel_load->transform.rotation.w);
 
-            state_marker_rel_drone_gt.setAtt(utils::transform_orientation(q_marker_rel_load, q_load_gt_rel_drone_gt));
+            // state_marker_rel_drone_gt.setAtt(utils::transform_orientation(q_marker_rel_load, q_load_gt_rel_drone_gt));
+            
+            auto state_marker_rel_cam_gt = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
+            state_marker_rel_cam_gt.setPos(Eigen::Vector3d(marker_gt_rel_cam_gt->transform.translation.x, marker_gt_rel_cam_gt->transform.translation.y, marker_gt_rel_cam_gt->transform.translation.z));
+            state_marker_rel_cam_gt.setAtt(tf2::Quaternion(marker_gt_rel_cam_gt->transform.rotation.x, marker_gt_rel_cam_gt->transform.rotation.y, marker_gt_rel_cam_gt->transform.rotation.z, marker_gt_rel_cam_gt->transform.rotation.w));
+
 
             // Find the error
             //state_marker_rel_drone->setFrame("drone" + std::to_string(this->drone_id_) + "_gt"); // Spoof: set the frame of the measured state to the ground truth frame to allow subtraction
             
+
             //auto err = *state_marker_rel_drone - state_marker_rel_drone_gt;
 
             // PRINTING FOR DEBUGGING
             // Print ground truth
             double yaw_gt, pitch_gt, roll_gt;
-            state_marker_rel_drone_gt.getAttYPR(yaw_gt, pitch_gt, roll_gt);
+            //state_marker_rel_drone_gt.getAttYPR(yaw_gt, pitch_gt, roll_gt);
+            state_marker_rel_cam_gt.getAttYPR(yaw_gt, pitch_gt, roll_gt);
 
             // Convert to degrees
             yaw_gt = yaw_gt * 180.0 / M_PI;
             pitch_gt = pitch_gt * 180.0 / M_PI;
             roll_gt = roll_gt * 180.0 / M_PI;
 
-            RCLCPP_INFO(this->get_logger(), "Marker pose rel drone ground truth: %f %f %f %f %f %f",
-                        state_marker_rel_drone_gt.getPos()[0], state_marker_rel_drone_gt.getPos()[1], state_marker_rel_drone_gt.getPos()[2],
+            // RCLCPP_INFO(this->get_logger(), "Marker pose rel drone ground truth: %f %f %f %f %f %f",
+            //             state_marker_rel_drone_gt.getPos()[0], state_marker_rel_drone_gt.getPos()[1], state_marker_rel_drone_gt.getPos()[2],
+            //             roll_gt, pitch_gt, yaw_gt);
+
+            RCLCPP_INFO(this->get_logger(), "Marker pose rel cam ground truth: %f %f %f %f %f %f",
+                        state_marker_rel_cam_gt.getPos()[0], state_marker_rel_cam_gt.getPos()[1], state_marker_rel_cam_gt.getPos()[2],
                         roll_gt, pitch_gt, yaw_gt);
 
             // Print the measured pose
             double yaw_meas, pitch_meas, roll_meas;
-            state_marker_rel_drone->getAttYPR(yaw_meas, pitch_meas, roll_meas);
+            //state_marker_rel_drone->getAttYPR(yaw_meas, pitch_meas, roll_meas);
+            this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
 
             // Convert to degrees
             yaw_meas = yaw_meas * 180.0 / M_PI;
             pitch_meas = pitch_meas * 180.0 / M_PI;
             roll_meas = roll_meas * 180.0 / M_PI;
 
-            RCLCPP_INFO(this->get_logger(), "Marker pose rel drone measured: %f %f %f %f %f %f",
-                        state_marker_rel_drone->getPos()[0], state_marker_rel_drone->getPos()[1], state_marker_rel_drone->getPos()[2],
+            // RCLCPP_INFO(this->get_logger(), "Marker pose rel drone measured: %f %f %f %f %f %f",
+            //             state_marker_rel_drone->getPos()[0], state_marker_rel_drone->getPos()[1], state_marker_rel_drone->getPos()[2],
+            //             roll_meas, pitch_meas, yaw_meas);
+
+            RCLCPP_INFO(this->get_logger(), "Marker pose rel cam measured: %f %f %f %f %f %f",
+                        this->state_marker_rel_camera_.getPos()[0], this->state_marker_rel_camera_.getPos()[1], this->state_marker_rel_camera_.getPos()[2],
                         roll_meas, pitch_meas, yaw_meas);
+
+            // auto mag_marker_rel_cam_gt = state_marker_rel_cam_gt.getPos().norm();
+            // auto mag_marker_rel_cam_meas = this->state_marker_rel_camera_.getPos().norm();
+            // auto mag_err = mag_marker_rel_cam_meas - mag_marker_rel_cam_gt;
+
+            // RCLCPP_INFO(this->get_logger(), "Marker rel cam norm gt: %f", mag_marker_rel_cam_gt);
+            // RCLCPP_INFO(this->get_logger(), "Marker rel cam norm: %f", mag_marker_rel_cam_meas);
+            // RCLCPP_INFO(this->get_logger(), "Marker rel cam error: %f", mag_err);
+
+            float distTrans = this->state_marker_rel_camera_.distTrans(state_marker_rel_cam_gt);
+            float distAngGeo = this->state_marker_rel_camera_.distAngGeo(state_marker_rel_cam_gt);
+
+            RCLCPP_INFO(this->get_logger(), "Marker rel cam dist trans: %f", distTrans);
+            RCLCPP_INFO(this->get_logger(), "Marker rel cam dist geo: %f", distAngGeo*180.0/M_PI);
+
+            // Save the PnP error data to a file
+            this->log_pnp_error(this->logging_file_path_, distTrans, distAngGeo);
+
 
             // Print the error
             // double yaw, pitch, roll;
@@ -201,9 +243,19 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
             // err.getAtt().x(), err.getAtt().y(), err.getAtt().z(), err.getAtt().w());
         }
 
-    }
+    }    
+}
 
-    
+void SlungPoseMeasurement::log_pnp_error(const std::string& filename, double distTrans, double distAngGeo) {
+    std::ofstream logFile;
+    logFile.open(filename, std::ios::app); // Open in append mode
+
+    if (logFile.is_open()) {
+        logFile << this->get_clock()->now().seconds() - this->start_time_.seconds() << " " << distTrans << " " << distAngGeo * 180.0 / M_PI << std::endl;
+        logFile.close();
+    } else {
+        RCLCPP_ERROR(this->get_logger(), "Unable to open file for logging");
+    }
 }
 
 void SlungPoseMeasurement::calc_cam_calib_matrix(double fov_x, double img_width, double img_height, cv::Mat &cam_K) {

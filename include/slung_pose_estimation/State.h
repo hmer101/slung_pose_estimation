@@ -6,6 +6,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <Eigen/Dense>
+#include <cmath>
 
 namespace droneState{
     // Co-ordinate system enum
@@ -26,8 +27,11 @@ namespace droneState{
         State operator-(const State &other) const;
 
         State copy() const;
-
         std::string to_string() const;
+
+        float distTrans(const State &other) const;
+        float distAngGeo(const State &other) const;
+        
 
         // Getters
         std::string getFrame() const { return frame; }

@@ -60,6 +60,12 @@ namespace utils {
         return state2;
     }
 
+    // MATH
+    // Helper function to calculate the trace of a 3x3 matrix
+    float getTrace(const tf2::Matrix3x3& matrix) {
+        return matrix[0][0] + matrix[1][1] + matrix[2][2];
+    }
+
     // STRING HANDLING
     int extract_id_from_name(const std::string& input) {
         size_t underscorePos = input.rfind('_');

@@ -1,4 +1,6 @@
 #include "slung_pose_estimation/State.h"
+#include "slung_pose_estimation/utils.h"
+#include <cmath>
 
 namespace droneState{
     // Constructor implementation
@@ -18,7 +20,7 @@ namespace droneState{
         if (frame != other.frame || cs_type != other.cs_type) {
             throw std::invalid_argument("Subtraction can only be performed on states with the same frame and CS type");
         }else {
-            return State(frame, cs_type, pos - other.pos, other.att*att.inverse(), vel - other.vel);
+            return State(frame, cs_type, pos - other.pos, other.att*att.inverse(), vel - other.vel); // TODO: Check relative att
         }
         
     }
@@ -36,5 +38,27 @@ namespace droneState{
         << ", att_q: [" << att.w() << ", " << att.x() << ", " << att.y() << ", " << att.z() << "]"
         << ", vel: [" << vel[0] << ", " << vel[1] << ", " << vel[2] << "]";
         return ss.str();
+    }
+
+    // Calculate the translation distance of this state to another state
+    float State::distTrans(const State& other) const {
+        Eigen::Vector3d t = other.getPos() - pos;
+        return t.norm();
+    }
+
+    // Calculate the geodesic distance of this state to another state
+    float State::distAngGeo(const State& other) const {
+        // Convert quaternions to rotation matrices
+        tf2::Matrix3x3 R1(this->att);
+        tf2::Matrix3x3 R2(other.getAtt());
+
+        // Compute the relative rotation matrix
+        tf2::Matrix3x3 relativeRotationMatrix = R1.inverse() * R2;
+
+        // Convert to axis-angle and take magnitude of angle
+        float dist_ang = std::fabs(std::acos((utils::getTrace(relativeRotationMatrix) - 1.0)/2.0));
+
+        // The angle is the geodesic distance
+        return dist_ang;
     }
 } // namespace droneState

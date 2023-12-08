@@ -24,6 +24,9 @@ namespace utils {
     //std::shared_ptr<State> transform_frames(const State& state, const std::string& frame2_name, tf2_ros::Buffer& tf_buffer, rclcpp::Logger logger);
     std::shared_ptr<droneState::State> transform_frames(const droneState::State &state, const std::string &frame2_name, tf2_ros::Buffer &tf_buffer, rclcpp::Logger logger, droneState::CS_type cs_out_type = droneState::CS_type::XYZ);
 
+    // MATH
+    float getTrace(const tf2::Matrix3x3 &matrix);
+
     // STRING HANDLING
     int extract_id_from_name(const std::string &input);
     std::vector<float> splitAndConvert(const std::string &s, char delimiter);
