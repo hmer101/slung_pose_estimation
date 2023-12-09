@@ -18,8 +18,8 @@ static void show_usage(const std::string& name) {
 } // namespace kalmanif
 
 #define KALMANIF_DEMO_PROCESS_INPUT(argc, argv)                     \
-  bool plot_trajectory = false;                                     \
-  bool plot_error = false;                                          \
+  bool plot_trajectory = true;                                     \
+  bool plot_error = true;                                          \
   bool quiet = false;                                               \
   std::string filename;                                             \
   for (int i = 1; i < argc; ++i) {                                  \
@@ -61,4 +61,25 @@ static void show_usage(const std::string& name) {
     }                                                                                   \
   }
 
+// Helper function to print a collector to a file
+#define KALMANIF_DEMO_SAVE_TRAJECTORY(collector, file_save_name, dt)                                        \
+{                                                                                                     \
+  std::ofstream outFile(file_save_name);                                                                    \
+  if (!outFile) {                                                                                     \
+      std::cerr << "Error opening file for writing" << "\n";                                          \               
+  }                                                                                                   \
+  float time_print = dt;                                                                              \
+  const auto& Xs_sim = collector.simu().Xs;                                                           \
+  for (std::size_t i = 0; i < Xs_sim.size(); ++i) {                                                   \
+      outFile << time_print << "\n";                                                                           \
+      outFile << Xs_sim[i].log() << "\n";                                                             \
+      for (const auto& c : collector) {                                                               \
+          outFile << c.second.Xs[i].log() << " " << (Xs_sim[i] - c.second.Xs[i]).weightedNorm() << "\n";     \
+      }                                                                                               \
+      time_print += dt;                                                                               \
+  }                                                                                                   \
+}                                                                                                     
+
+
 #endif // _KALMANIF_EXAMPLES_UTILS_H_
+

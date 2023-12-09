@@ -7,6 +7,8 @@ project(slung_pose_estimation)
 # endif()
 
 #set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+option(WITH_PLOTS "Build with plot support" ON) #ON
+
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -23,6 +25,7 @@ find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_eigen REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(kalmanif REQUIRED)
 
@@ -43,6 +46,27 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+# if(WITH_PLOTS)
+#   add_definitions(-DWITH_PLOTS)
+#   # Include directories and link libraries necessary for sciplot
+#   find_package(sciplot REQUIRED)
+#   #find_package(libsciplot REQUIRED)
+#   include_directories(${SCI_PLOT_INCLUDE_DIRS})
+#   # Additional target_link_libraries might be required
+# endif()
+
+# if(PLOT_EXAMPLES)
+#   # Look for a system installed sciplot
+#   # if none found, fallback to local copy
+#   find_package(sciplot QUIET)
+
+#   if (sciplot_FOUND)
+#     function(target_link_sciplot target)
+#       target_link_libraries(${target} sciplot::sciplot)
+#     endfunction()
+#   else()
+
 
 
 # Declare libraries and executables
@@ -81,8 +105,27 @@ target_link_libraries(State
 
 
 ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
-ament_target_dependencies(utils rclcpp tf2_ros Eigen3 std_msgs tf2_geometry_msgs OpenCV)
+ament_target_dependencies(utils rclcpp tf2_ros tf2_eigen Eigen3 std_msgs tf2_geometry_msgs OpenCV)
 ament_target_dependencies(slung_pose_measurement rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs)
+
+
+# if(WITH_PLOTS)
+#   # Link sciplot to your targets
+#   target_link_libraries(slung_pose_estimation sciplot::sciplot)
+# endif()
+
+if(WITH_PLOTS)
+  #add_definitions(-DWITH_PLOTS)
+  function(target_link_sciplot target)
+    target_include_directories(
+      ${target} SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/external/sciplot"
+    )
+  endfunction()
+  #endif()
+
+  add_compile_definitions(WITH_PLOTS)
+  target_link_sciplot(slung_pose_estimation)
+endif()
 
 
 # Install the libraries and executables
@@ -105,6 +148,7 @@ install(DIRECTORY
     data
     DESTINATION share/${PROJECT_NAME}/
 )
+
 
 # Export dependencies
 ament_package()

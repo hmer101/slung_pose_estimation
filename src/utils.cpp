@@ -1,4 +1,11 @@
 #include "slung_pose_estimation/utils.h"
+#include <fstream>
+#include <iostream>
+#include <vector>
+
+#include <tf2_eigen/tf2_eigen.h>
+#include <Eigen/Dense>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 namespace utils {
     // TRANSFORMS
@@ -66,7 +73,7 @@ namespace utils {
         return matrix[0][0] + matrix[1][1] + matrix[2][2];
     }
 
-    // STRING HANDLING
+    // STRING AND FILE HANDLING
     int extract_id_from_name(const std::string& input) {
         size_t underscorePos = input.rfind('_');
 
@@ -92,6 +99,24 @@ namespace utils {
     }
     
     // CONVERSIONS
+    Eigen::Vector3d convert_vec_floats_to_eigen(const std::vector<float>& float_vector) {
+        Eigen::Vector3d eigen_vector;
+
+        // Check if the vector has exactly 3 elements
+        if (float_vector.size() != 3) {
+            std::cerr << "Error: Vector does not contain exactly 3 elements." << std::endl;
+            return eigen_vector;
+        }
+
+        // Convert std::vector<float> to Eigen::Vector3d
+        eigen_vector << static_cast<double>(float_vector[0]),
+                        static_cast<double>(float_vector[1]),
+                        static_cast<double>(float_vector[2]);
+
+        return eigen_vector;                
+    }
+
+
     geometry_msgs::msg::Pose convert_state_to_pose_msg(const droneState::State& state) {
         geometry_msgs::msg::Pose pose_msg;
 
@@ -127,6 +152,26 @@ namespace utils {
 
         return tf2_quaternion;
     }
+
+    // Convert a rotation vector to a rotation matrix in Eigen::Vector3d format
+    Eigen::Matrix3d convert_rvec_to_rotmat(const Eigen::Vector3d& rvec) {
+        // Convert Eigen vector to a tf2 quaternion
+        tf2::Quaternion quat;
+        quat.setRPY(rvec[0], rvec[1], rvec[2]);
+        
+        // Convert tf2 quaternion to an eigen rotation matrix
+        tf2::Matrix3x3 tf2_rotMat(quat);
+        Eigen::Matrix3d eigen_rotMat;
+
+        for (int row = 0; row < 3; ++row) {
+            for (int col = 0; col < 3; ++col) {
+                eigen_rotMat(row, col) = tf2_rotMat[row][col];
+            }
+        }
+        
+        return eigen_rotMat;
+    }
+
 
 
 } // namespace utils

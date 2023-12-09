@@ -340,6 +340,7 @@ struct DataPlotter {
     bool show = true
   ) {
 #ifdef WITH_PLOTS
+    int lineWidth = 3;
     if (filename.empty() && !show) {
       return;
     }
@@ -381,27 +382,28 @@ struct DataPlotter {
     for (int i = 0; i < LieGroup::DoF; ++i) {
       plots[i].xlabel("time");
       plots[i].ylabel("error " + labels[i]);
-      plots[i].drawCurve(data_est.time, cs[i]).lineColor("blue").lineWidth(1);
+      plots[i].drawCurve(data_est.time, cs[i]).lineColor("blue").lineWidth(lineWidth);
       plots[i].drawCurve(
         data_est.time, sigma3[i]
-      ).lineColor("red").dashType(12).lineWidth(1);
+      ).lineColor("red").dashType(12).lineWidth(lineWidth);
       std::for_each(sigma3[i].begin(), sigma3[i].end(), [](double &n){ n*=-1.; });
       plots[i].drawCurve(
         data_est.time, sigma3[i]
-      ).lineColor("red").dashType(12).lineWidth(1);
+      ).lineColor("red").dashType(12).lineWidth(lineWidth);
       plots[i].legend().hide();
     }
 
     sciplot::Plot& plot_xi_norm = plots.back();
     plot_xi_norm.xlabel("time");
     plot_xi_norm.ylabel("full-state error");
-    plot_xi_norm.drawCurve(data_est.time, error).lineColor("blue").lineWidth(1);
+    plot_xi_norm.drawCurve(data_est.time, error).lineColor("blue").lineWidth(lineWidth);
     plot_xi_norm.legend().hide();
 
     sciplot::Figure fig = {{ plots[0], plots[1] },
                            { plots[2], plots[3] }};
 
     fig.title(data_est.name + " state error with 3-sigmas");
+    fig.size(1500, 1500);
 
     if (show) {
       fig.show();
@@ -463,7 +465,7 @@ struct DemoTrajPlotter {
     bool show = true
   ) {
 #ifdef WITH_PLOTS
-
+  int lineWidth = 3;
   constexpr auto Dim = LieGroup::Dim;
 
   if (filename.empty() && !show) {
@@ -500,10 +502,10 @@ struct DemoTrajPlotter {
 
   if constexpr (Dim==3) {
     plot.drawCurve(x_true, y_true, z_true)
-        .lineColor("black").lineWidth(1).label("Groundtruth");
+        .lineColor("black").lineWidth(lineWidth).label("Groundtruth");
   } else {
     plot.drawCurve(x_true, y_true)
-        .lineColor("black").lineWidth(1).label("Groundtruth");
+        .lineColor("black").lineWidth(lineWidth).label("Groundtruth");
   }
 
   int c = 0;
@@ -528,13 +530,15 @@ struct DemoTrajPlotter {
     if constexpr (Dim==3) {
       plot.drawCurve(x_est, y_est, z_est)
           .lineColor(DemoPlotColor::colors[c++]).dashType(12)
-          .lineWidth(1).label(p.second.name);
+          .lineWidth(lineWidth).label(p.second.name);
     } else {
       plot.drawCurve(x_est, y_est)
         .lineColor(DemoPlotColor::colors[c++]).dashType(12)
-        .lineWidth(1).label(p.second.name);
+        .lineWidth(lineWidth).label(p.second.name);
     }
   }
+
+  plot.size(1000, 1000);
 
   // Set the legend to be on the bottom along the horizontal
   plot.legend()
