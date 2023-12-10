@@ -20,7 +20,7 @@ def read_log_file(filename):
 
     return time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo
 
-def plot_data(time, pos_gt, rpy_gt, pos, rpy): #, pos_err, att_err, distTrans, distAngGeo):
+def plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size): #, pos_err, att_err, distTrans, distAngGeo):
     plt.figure(figsize=(15, 10))
 
     # Position and Ground Truth Position
@@ -33,10 +33,12 @@ def plot_data(time, pos_gt, rpy_gt, pos, rpy): #, pos_err, att_err, distTrans, d
     plt.plot(time, pos[0], label='pos_x', linestyle='dashed', color='blue')
     plt.plot(time, pos[1], label='pos_y', linestyle='dashed', color='green')
     plt.plot(time, pos[2], label='pos_z', linestyle='dashed', color='red')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Position (m)')
-    plt.title('Measured vs. Ground Truth Position of the Load Relative to the Camera Frame')
-    plt.legend()
+    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Position (m)', fontsize=axes_label_font_size)
+    plt.title('Measured vs. Ground Truth Position of the Load Relative to the Camera Frame', fontsize=title_font_size)
+    plt.legend(fontsize=legend_font_size)
+    plt.xticks(fontsize=ticks_font_size)
+    plt.yticks(fontsize=ticks_font_size)
 
     # RPY and Ground Truth RPY
     plt.subplot(2, 1, 2)
@@ -48,16 +50,18 @@ def plot_data(time, pos_gt, rpy_gt, pos, rpy): #, pos_err, att_err, distTrans, d
     plt.plot(time, rpy[0], label='rpy_roll', linestyle='dashed', color='blue')
     plt.plot(time, rpy[1], label='rpy_pitch', linestyle='dashed', color='green')
     plt.plot(time, rpy[2], label='rpy_yaw', linestyle='dashed', color='red')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Orientation (Degrees)')
-    plt.title('Measured vs. Ground Truth Orientation of the Load Relative to the Camera Frame')
-    plt.legend()
+    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Orientation (Degrees)', fontsize=axes_label_font_size)
+    plt.title('Measured vs. Ground Truth Orientation of the Load Relative to the Camera Frame', fontsize=title_font_size)
+    plt.legend(fontsize=legend_font_size)
+    plt.xticks(fontsize=ticks_font_size)
+    plt.yticks(fontsize=ticks_font_size)
 
     plt.tight_layout()
     plt.show()
 
 
-def plot_errors(time, pos_err, att_err):
+def plot_errors(time, pos_err, att_err, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
     plt.figure(figsize=(10, 5))
 
     # Position Errors
@@ -66,10 +70,12 @@ def plot_errors(time, pos_err, att_err):
     plt.plot(time, pos_err[0], label='pos_err_x', color='blue')
     plt.plot(time, pos_err[1], label='pos_err_y', color='green')
     plt.plot(time, pos_err[2], label='pos_err_z', color='red')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Position Error (m)')
-    plt.title('Measurement Position Error Over Time')
-    plt.legend()
+    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Position Error (m)', fontsize=axes_label_font_size)
+    plt.title('Measurement Position Error Over Time', fontsize=title_font_size)
+    plt.legend(fontsize=legend_font_size)
+    plt.xticks(fontsize=ticks_font_size)
+    plt.yticks(fontsize=ticks_font_size)
 
     # Orientation Errors
     plt.subplot(2, 1, 2)
@@ -77,32 +83,38 @@ def plot_errors(time, pos_err, att_err):
     plt.plot(time, att_err[0], label='att_err_roll', color='blue')
     plt.plot(time, att_err[1], label='att_err_pitch', color='green')
     plt.plot(time, att_err[2], label='att_err_yaw', color='red')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Orientation Error (Degrees)')
-    plt.title('Measurement Orientation Error Over Time')
-    plt.legend()
+    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Orientation Error (Degrees)', fontsize=axes_label_font_size)
+    plt.title('Measurement Orientation Error Over Time', fontsize=title_font_size)
+    plt.legend(fontsize=legend_font_size)
+    plt.xticks(fontsize=ticks_font_size)
+    plt.yticks(fontsize=ticks_font_size)
 
     plt.tight_layout()
     plt.show()
 
-def plot_trans_geo(time, distTrans, distAngGeo):
+def plot_trans_geo(time, distTrans, distAngGeo, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
     plt.figure(figsize=(10, 5))
 
     # distTrans
     plt.subplot(2, 1, 1)
     plt.plot(time, distTrans, color='blue') #label='distTrans',
-    plt.xlabel('Time (s)')
-    plt.ylabel('Translation Distance (m)')
-    plt.title('Distance Measurement Error Magnitude Over Time')
-    plt.legend()
+    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Translation Distance (m)', fontsize=axes_label_font_size)
+    plt.title('Distance Measurement Error Magnitude Over Time', fontsize=title_font_size)
+    plt.legend(fontsize=legend_font_size)
+    plt.xticks(fontsize=ticks_font_size)
+    plt.yticks(fontsize=ticks_font_size)
 
     # distAngGeo
     plt.subplot(2, 1, 2)
     plt.plot(time, distAngGeo, color='red') #label='distAngGeo',
-    plt.xlabel('Time (s)')
-    plt.ylabel('Geodesic Distance (Degrees)')
-    plt.title('Geodesic Distance Attitude Measurement Error Over Time')
-    plt.legend()
+    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Geodesic Distance (Degrees)', fontsize=axes_label_font_size)
+    plt.title('Geodesic Distance Attitude Measurement Error Over Time', fontsize=title_font_size)
+    plt.legend(fontsize=legend_font_size)
+    plt.xticks(fontsize=ticks_font_size)
+    plt.yticks(fontsize=ticks_font_size)
 
     plt.tight_layout()
     plt.show()
@@ -110,9 +122,15 @@ def plot_trans_geo(time, distTrans, distAngGeo):
 
 
 def main():
+    # Set parameters
+    title_font_size = 16
+    axes_label_font_size = 14
+    legend_font_size = 12
+    ticks_font_size = 10
+
     # Retrieve data from log file
     path = '/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + 'pnp_errors.txt'  # replace with your log file path
+    filename = path + 'pnp_errors_p3p.txt'  # replace with your log file path
     time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo = read_log_file(filename)
     
     # Convert
@@ -123,9 +141,9 @@ def main():
     #distAngGeo = [d * 180 / math.pi for d in distAngGeo]
 
     # Plot
-    plot_data(time, pos_gt, rpy_gt, pos, rpy) #, pos_err, att_err, distTrans, distAngGeo)
-    plot_errors(time, pos_err, att_err)
-    plot_trans_geo(time, distTrans, distAngGeo)
+    plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size) #, pos_err, att_err, distTrans, distAngGeo)
+    plot_errors(time, pos_err, att_err, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    plot_trans_geo(time, distTrans, distAngGeo, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
 if __name__ == '__main__':
     main()

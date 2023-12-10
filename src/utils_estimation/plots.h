@@ -341,6 +341,8 @@ struct DataPlotter {
   ) {
 #ifdef WITH_PLOTS
     int lineWidth = 3;
+    int fontSize = 14;
+
     if (filename.empty() && !show) {
       return;
     }
@@ -391,6 +393,7 @@ struct DataPlotter {
         data_est.time, sigma3[i]
       ).lineColor("red").dashType(12).lineWidth(lineWidth);
       plots[i].legend().hide();
+      //plots[i].fontSize(fontSize);
     }
 
     sciplot::Plot& plot_xi_norm = plots.back();
@@ -404,6 +407,7 @@ struct DataPlotter {
 
     fig.title(data_est.name + " state error with 3-sigmas");
     fig.size(1500, 1500);
+    fig.fontSize(fontSize);
 
     if (show) {
       fig.show();
@@ -466,6 +470,7 @@ struct DemoTrajPlotter {
   ) {
 #ifdef WITH_PLOTS
   int lineWidth = 3;
+  int fontSize = 12;
   constexpr auto Dim = LieGroup::Dim;
 
   if (filename.empty() && !show) {
@@ -539,6 +544,7 @@ struct DemoTrajPlotter {
   }
 
   plot.size(1000, 1000);
+  plot.fontSize(fontSize);
 
   // Set the legend to be on the bottom along the horizontal
   plot.legend()

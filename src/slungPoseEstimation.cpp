@@ -375,7 +375,7 @@ int main(int argc, char* argv[]) {
     // }
 
     //// III. Results
-    if(cnt_steps > 20){ // Filter out the first results to allow for convergence - nicer for plotting
+    if(cnt_steps >= 20){ //20 Filter out the first results to allow for convergence - nicer for plotting
       collector.collect(X_simulation, t);
 
       collector.collect("UNFI", X_unfiltered, StateCovariance::Zero(), t);
