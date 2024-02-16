@@ -6,7 +6,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_listener.h>
 
-#include <sensor_msgs/msg/image.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include "std_msgs/msg/string.hpp"
 #include <image_transport/image_transport.hpp>
@@ -27,15 +26,12 @@ public:
 
 private:
     // PARAMETERS
-    //int num_cameras;
-    //int first_drone_num;
-    //std::vector<cv::Mat> cam_Ks_;
-    //std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> sub_img_drones_;
-
     std::string ns_; // Namespace of the node
     int drone_id_; // ID of the drone this node is running on
     int load_id_;
+    bool evaluate_; // Whether to evaluate the pose estimation vs ground truth
     int show_markers_config_; // 0 = No, 1 = Yes all, 2 = Drone 1 only
+    float marker_edge_length_;
     rclcpp::Time start_time_;
 
     cv::Mat cam_K_;
@@ -48,15 +44,20 @@ private:
 
     std::string logging_file_path_;
 
+    // Flags 
+    bool flag_cam_k_set_ = false;
+
     // SUBSCRIBERS
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img_drone_;
+    rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr sub_cam_color_info;
 
     // PUBLISHERS
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pub_marker_rel_camera_;
 
     // CALLBACKS
+    void clbk_cam_color_info_received(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
     void clbk_image_received(const sensor_msgs::msg::Image::SharedPtr msg);
-    
+
     // HELPERS
     void log_pnp_error(const std::string &filename, const droneState::State &state_marker_rel_cam_gt, const droneState::State &state_marker_rel_cam);
 

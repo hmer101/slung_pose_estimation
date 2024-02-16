@@ -1,7 +1,9 @@
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+
 #include "slung_pose_estimation/slungPoseMeasurement.h"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fstream>
-
 
 SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp::NodeOptions().use_global_arguments(true)) {
     // PARAMETERS
@@ -11,11 +13,28 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->declare_parameter<int>("show_markers", 0);
     this->get_parameter("show_markers", this->show_markers_config_); 
 
+    this->declare_parameter<float>("marker_edge_length", 0.08f);
+    this->get_parameter("marker_edge_length", this->marker_edge_length_);
+
+    this->declare_parameter<bool>("evaluate", false);
+    this->get_parameter("evaluate", this->evaluate_);
+
     this->declare_parameter<int>("load_id", 1);
     this->get_parameter("load_id", this->load_id_);
 
+    std::string topic_img_rgb;
+    this->declare_parameter<std::string>("topic_img_rgb","");
+    this->get_parameter("topic_img_rgb", topic_img_rgb);
+
+    std::string topic_cam_info_color; 
+    this->declare_parameter<std::string>("topic_cam_info_color","");
+    this->get_parameter("topic_cam_info_color", topic_cam_info_color);
+
+
+    // Set the logging file path
     std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
-    this->logging_file_path_ = package_share_directory + "/data/pnp_errors.txt";
+    std::string filepath = "/data/pnp_errors_drone" + std::to_string(this->drone_id_) + ".txt";
+    this->logging_file_path_ = package_share_directory + filepath;
 
     // VARIABLES
     this->state_marker_rel_camera_ = droneState::State("camera" + std::to_string(this->drone_id_), droneState::CS_type::XYZ);
@@ -25,11 +44,13 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
 
 
     // SUBSCRIBERS
-    std::string topic_name = this->ns_ + "/out/camera";
-
+    std::string image_topic_rgb = this->ns_ + topic_img_rgb;
     this->sub_img_drone_ = this->create_subscription<sensor_msgs::msg::Image>(
-        topic_name, 10, std::bind(&SlungPoseMeasurement::clbk_image_received, this, std::placeholders::_1));
+        image_topic_rgb, 10, std::bind(&SlungPoseMeasurement::clbk_image_received, this, std::placeholders::_1));
 
+    std::string cam_info_topic = this->ns_ + topic_cam_info_color;
+    this->sub_cam_color_info = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+        cam_info_topic, 10, std::bind(&SlungPoseMeasurement::clbk_cam_color_info_received, this, std::placeholders::_1));
 
     // PUBLISHERS
     this->pub_marker_rel_camera_ = this->create_publisher<geometry_msgs::msg::Pose>(
@@ -43,7 +64,8 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->cam_K_ = (cv::Mat_<double>(3, 3) << 1.0, 0.0, 0.0,
                                         0.0, 1.0, 0.0,
                                         0.0, 0.0, 1.0);
-    calc_cam_calib_matrix(1.396, 960, 540, this->cam_K_);
+    //calc_cam_calib_matrix(1.396, 960, 540, this->cam_K_);
+
 
     // Create a window to display the image if desired
     if (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1)){
@@ -55,10 +77,24 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     
 }
 
-
 SlungPoseMeasurement::~SlungPoseMeasurement() {
     // Destroy the window when the object is destroyed
     cv::destroyWindow("Detected Markers Drone " + std::to_string(this->drone_id_));
+}
+
+void SlungPoseMeasurement::clbk_cam_color_info_received(const sensor_msgs::msg::CameraInfo::SharedPtr msg){
+    // Get the camera calibration matrix for the camera if it is not already set
+    if (this->flag_cam_k_set_){
+        return;
+    }else{
+        for(int i = 0; i < 3; ++i) {
+            for(int j = 0; j < 3; ++j) {
+                this->cam_K_.at<double>(i, j) = msg->k[i * 3 + j];
+            }
+        }
+
+        this->flag_cam_k_set_ = true;
+    }
 }
 
 void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::SharedPtr msg){
@@ -86,17 +122,14 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         }
     }
 
-    // Perform marker pose estimation if the target marker is detected
-    if (!targetCorners.empty()) {
+    // Perform marker pose estimation if the target marker is detected and camera calibration matrix is set
+    if (!targetCorners.empty() && this->flag_cam_k_set_) {
         // Define the 3D coordinates of marker corners (assuming square markers) in the marker's coordinate system
-        // TODO: Properly parametize in a file to allow easy swapping to real world
-        float markerEdgeLength = 0.08f;  // marker size in meters
-
         std::vector<cv::Point3f> markerPoints = {
-            {-markerEdgeLength/2,  markerEdgeLength/2, 0.0f},
-            { markerEdgeLength/2,  markerEdgeLength/2, 0.0f},
-            { markerEdgeLength/2,  -markerEdgeLength/2, 0.0f},
-            {-markerEdgeLength/2, -markerEdgeLength/2, 0.0f}
+            {-this->marker_edge_length_/2.0f,  this->marker_edge_length_/2.0f, 0.0f},
+            { this->marker_edge_length_/2.0f,  this->marker_edge_length_/2.0f, 0.0f},
+            { this->marker_edge_length_/2.0f,  -this->marker_edge_length_/2.0f, 0.0f},
+            {-this->marker_edge_length_/2.0f, -this->marker_edge_length_/2.0f, 0.0f}
         };
 
         // Get the camera parameters 
@@ -107,15 +140,6 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         cv::Vec3d rvec, tvec;
         cv::solvePnP(markerPoints, targetCorners, this->cam_K_, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_IPPE_SQUARE); //cv::SOLVEPNP_P3P cv::SOLVEPNP_IPPE_SQUARE // cv::SOLVEPNP_ITERATIVE 
 
-        // Display the image (for drone 1) with detected markers
-        if (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1)){
-            // Draw the detected marker axes
-            cv::drawFrameAxes(outputImage, this->cam_K_, distCoeffs, rvec, tvec, 0.1);
-
-            cv::imshow("Detected Markers Drone " + std::to_string(this->drone_id_), outputImage);
-            cv::waitKey(30);
-        }
-
         this->state_marker_rel_camera_.setAtt(utils::convert_rvec_to_quaternion(rvec));
         this->state_marker_rel_camera_.setPos(Eigen::Vector3d(tvec[0], tvec[1], tvec[2]));
 
@@ -123,32 +147,17 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         geometry_msgs::msg::Pose pose_msg = utils::convert_state_to_pose_msg(this->state_marker_rel_camera_);
         this->pub_marker_rel_camera_->publish(pose_msg);
 
-        // Evaluate the marker pose estimation against ground truth
-        auto marker_gt_rel_cam_gt = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt","load_marker" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
 
-        if (marker_gt_rel_cam_gt && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
-            // Calculate the PnP error            
-            auto state_marker_rel_cam_gt = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
-            state_marker_rel_cam_gt.setPos(Eigen::Vector3d(marker_gt_rel_cam_gt->transform.translation.x, marker_gt_rel_cam_gt->transform.translation.y, marker_gt_rel_cam_gt->transform.translation.z));
-            state_marker_rel_cam_gt.setAtt(tf2::Quaternion(marker_gt_rel_cam_gt->transform.rotation.x, marker_gt_rel_cam_gt->transform.rotation.y, marker_gt_rel_cam_gt->transform.rotation.z, marker_gt_rel_cam_gt->transform.rotation.w));
+        // Display the image with detected markers if desired
+        if (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1)){
+            // Draw the detected marker axes
+            cv::drawFrameAxes(outputImage, this->cam_K_, distCoeffs, rvec, tvec, 0.1);
 
-            // Save the PnP error data to a file
-            this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_);
+            cv::imshow("Detected Markers Drone " + std::to_string(this->drone_id_), outputImage);
+            cv::waitKey(30);
 
             // PRINTING FOR DEBUGGING
-            // Print ground truth
-            // double yaw_gt, pitch_gt, roll_gt;
-            // state_marker_rel_cam_gt.getAttYPR(yaw_gt, pitch_gt, roll_gt);
-
-            // yaw_gt = yaw_gt * 180.0 / M_PI;
-            // pitch_gt = pitch_gt * 180.0 / M_PI;
-            // roll_gt = roll_gt * 180.0 / M_PI;
-
-            // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam ground truth: %f %f %f %f %f %f",
-            //             state_marker_rel_cam_gt.getPos()[0], state_marker_rel_cam_gt.getPos()[1], state_marker_rel_cam_gt.getPos()[2],
-            //             roll_gt, pitch_gt, yaw_gt);
-
-            // Print the measured pose
+            //Print the measured pose
             // double yaw_meas, pitch_meas, roll_meas;
             // this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
 
@@ -160,6 +169,47 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
             //             this->state_marker_rel_camera_.getPos()[0], this->state_marker_rel_camera_.getPos()[1], this->state_marker_rel_camera_.getPos()[2],
             //             roll_meas, pitch_meas, yaw_meas);
 
+        }
+
+        // Evaluate the marker pose estimation against ground truth
+        if (this->evaluate_) {
+            auto marker_gt_rel_cam_gt = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt","load_marker" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
+
+            if (marker_gt_rel_cam_gt) { // && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
+                // Calculate the PnP error            
+                auto state_marker_rel_cam_gt = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
+                state_marker_rel_cam_gt.setPos(Eigen::Vector3d(marker_gt_rel_cam_gt->transform.translation.x, marker_gt_rel_cam_gt->transform.translation.y, marker_gt_rel_cam_gt->transform.translation.z));
+                state_marker_rel_cam_gt.setAtt(tf2::Quaternion(marker_gt_rel_cam_gt->transform.rotation.x, marker_gt_rel_cam_gt->transform.rotation.y, marker_gt_rel_cam_gt->transform.rotation.z, marker_gt_rel_cam_gt->transform.rotation.w));
+
+                // Save the PnP error data to a file
+                this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_);
+
+                // PRINTING FOR DEBUGGING
+                // Print ground truth
+                // double yaw_gt, pitch_gt, roll_gt;
+                // state_marker_rel_cam_gt.getAttYPR(yaw_gt, pitch_gt, roll_gt);
+
+                // yaw_gt = yaw_gt * 180.0 / M_PI;
+                // pitch_gt = pitch_gt * 180.0 / M_PI;
+                // roll_gt = roll_gt * 180.0 / M_PI;
+
+                // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam ground truth: %f %f %f %f %f %f",
+                //             state_marker_rel_cam_gt.getPos()[0], state_marker_rel_cam_gt.getPos()[1], state_marker_rel_cam_gt.getPos()[2],
+                //             roll_gt, pitch_gt, yaw_gt);
+
+                // Print the measured pose
+                // double yaw_meas, pitch_meas, roll_meas;
+                // this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
+
+                // yaw_meas = yaw_meas * 180.0 / M_PI;
+                // pitch_meas = pitch_meas * 180.0 / M_PI;
+                // roll_meas = roll_meas * 180.0 / M_PI;
+
+                // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam measured: %f %f %f %f %f %f",
+                //             this->state_marker_rel_camera_.getPos()[0], this->state_marker_rel_camera_.getPos()[1], this->state_marker_rel_camera_.getPos()[2],
+                //             roll_meas, pitch_meas, yaw_meas);
+
+            }
         }
     }    
 }
