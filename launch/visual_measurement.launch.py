@@ -56,26 +56,6 @@ def generate_launch_description():
             output='screen',
             parameters=[config]
         )]
-    
-    # If physical environment, launch physical camera nodes too 
-    if env=="phys":
-        # launch_description.append(ExecuteProcess(
-        #     cmd=[
-        #     'gnome-terminal', '--tab', '--', 'bash', '-c', 
-        #     PythonExpression([
-        #         "'ros2 run realsense2_camera realsense2_camera_node --ros-args -r __ns:=/px4_1' + str(", drone_id, ")"])
-        #     ], #--ros-args -r __ns:=/px4_1 + str(", drone_id, ")" + str(1)"
-        #     shell=True
-        # ))
-
-        launch_description.append(Node(
-            package='realsense2_camera',
-            executable='realsense2_camera_node',
-            namespace=PythonExpression(["'/px4_' + str(", drone_id, ")"]),
-            name='camera',
-            output='screen',
-            parameters=[config]
-        ))
 
     ## LAUNCH
     return LaunchDescription(launch_description)
