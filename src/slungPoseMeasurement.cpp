@@ -248,6 +248,7 @@ void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const dron
     }
 }
 
+//TODO: FIX THIS FUNCTION - currently produces incorrect results
 void SlungPoseMeasurement::calc_cam_calib_matrix(double fov_x, double img_width, double img_height, cv::Mat &cam_K) {
     // Calculate the aspect ratio
     double aspect_ratio = img_width / img_height;
