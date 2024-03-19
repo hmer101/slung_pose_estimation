@@ -1,26 +1,32 @@
 import launch
-import os, sys
+import os, sys, yaml
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
-from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch import LaunchDescription
 
 from ament_index_python.packages import get_package_share_directory
 
-DEFAULT_ENV='sim'
+DEFAULT_DRONE_ID=1
+DEFAULT_ENV='phys'
 
 def generate_launch_description():
     ## LAUNCH ARGUMENTS
     #TODO: Note this doesn't work when passed from higher-level launch file
-    launch_arg_sim_phys = DeclareLaunchArgument( 
+    launch_arg_drone_id = DeclareLaunchArgument(
+      'drone_id', default_value=str(DEFAULT_DRONE_ID)
+    )
+    launch_arg_sim_phys = DeclareLaunchArgument(
       'env', default_value=str(DEFAULT_ENV)
     )
 
-    # Get arguments
+    # Get arguments  
+    drone_id = LaunchConfiguration('drone_id')
+
     env = DEFAULT_ENV
-    # for arg in sys.argv:
-    #     if arg.startswith("env:="):
-    #         env = arg.split(":=")[1]
+    for arg in sys.argv:
+        if arg.startswith("env:="):
+            env = arg.split(":=")[1]
 
     ## GET PARAMETERS
     config = None
@@ -37,24 +43,21 @@ def generate_launch_description():
         'config',
         'phys.yaml'
         ) 
-    
-    # List of drone namespaces
-    drone_namespaces = ["/x500_1", "/x500_2", "/x500_3"]
 
-    # Create a list of Node actions
-    node_actions = [
+    # Set up launch description to launch measurement node with arguments
+    launch_description = [
+        launch_arg_drone_id,
+        launch_arg_sim_phys,
         Node(
             package='slung_pose_estimation',
             executable='slung_pose_measurement',
-            name=f'slung_pose_measure_{i + 1}',
-            namespace=ns, 
+            namespace=PythonExpression(["'/px4_' + str(", drone_id, ")"]),
+            name='visual_measurement',
             output='screen',
             parameters=[config]
-        )
-        for i, ns in enumerate(drone_namespaces)
-    ]
+        )]
 
-    node_actions.append(launch_arg_sim_phys)
+    ## LAUNCH
+    return LaunchDescription(launch_description)
 
-    # Return the LaunchDescription with all node actions
-    return LaunchDescription(node_actions)
+    

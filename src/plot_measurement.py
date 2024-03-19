@@ -130,7 +130,7 @@ def main():
 
     # Retrieve data from log file
     path = '/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + 'pnp_errors_p3p.txt'  # replace with your log file path
+    filename = path + 'pnp_errors_drone1.txt'  # replace with your log file path
     time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo = read_log_file(filename)
     
     # Convert
