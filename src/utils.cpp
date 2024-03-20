@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_eigen/tf2_eigen.hpp>
 #include <Eigen/Dense>
 #include <tf2/LinearMath/Matrix3x3.h>
 
