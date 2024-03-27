@@ -143,7 +143,7 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}/
 )
 
-# Install data
+# Install data (note without this get "unable to open file for logging" error)
 install(DIRECTORY
     data
     DESTINATION share/${PROJECT_NAME}/

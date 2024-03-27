@@ -5,6 +5,9 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fstream>
 
+#include <chrono> // Include for std::chrono
+#include <iomanip> // Include for std::put_time
+
 SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp::NodeOptions().use_global_arguments(true)) {
     // PARAMETERS
     this->ns_ = this->get_namespace();
@@ -30,10 +33,18 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->declare_parameter<std::string>("topic_cam_info_color","");
     this->get_parameter("topic_cam_info_color", topic_cam_info_color);
 
+    // Get the current time
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S_"); // Format the time
 
     // Set the logging file path
     std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
-    std::string filepath = "/data/pnp_errors_drone" + std::to_string(this->drone_id_) + ".txt";
+    //std::string filepath = "/data/measurement_drone" + std::to_string(this->drone_id_) + ".txt";
+    std::string filename = "measurement_drone" + std::to_string(this->drone_id_) + ".txt";
+    std::string filepath = "/data/" + ss.str() + filename; // Prepend the formatted time to the filename
     this->logging_file_path_ = package_share_directory + filepath;
 
     // VARIABLES

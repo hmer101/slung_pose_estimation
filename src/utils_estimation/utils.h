@@ -62,16 +62,16 @@ static void show_usage(const std::string& name) {
   }
 
 // Helper function to print a collector to a file
-#define KALMANIF_DEMO_SAVE_TRAJECTORY(collector, file_save_name, dt)                                        \
+#define KALMANIF_DEMO_SAVE_TRAJECTORY(collector, file_save_name, dt)                                  \
 {                                                                                                     \
-  std::ofstream outFile(file_save_name);                                                                    \
+  std::ofstream outFile(file_save_name);                                                              \
   if (!outFile) {                                                                                     \
       std::cerr << "Error opening file for writing" << "\n";                                          \               
   }                                                                                                   \
   float time_print = dt;                                                                              \
   const auto& Xs_sim = collector.simu().Xs;                                                           \
   for (std::size_t i = 0; i < Xs_sim.size(); ++i) {                                                   \
-      outFile << time_print << "\n";                                                                           \
+      outFile << time_print << "\n";                                                                  \
       outFile << Xs_sim[i].log() << "\n";                                                             \
       for (const auto& c : collector) {                                                               \
           outFile << c.second.Xs[i].log() << " " << (Xs_sim[i] - c.second.Xs[i]).weightedNorm() << "\n";     \
