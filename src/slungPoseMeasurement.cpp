@@ -66,8 +66,8 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
         image_topic_rgb = this->ns_ + image_topic_rgb;
         cam_info_topic = this->ns_ + cam_info_topic;
     }else if(this->env_ == "phys"){
-        std::string topic_name_prefix = this->ns_ + "/" + "camera" + std::to_string(this->drone_id_)
-        image_topic_rgb =  topic_name_prefix + topic_img_rgb;
+        std::string topic_name_prefix = this->ns_ + "/" + "camera" + std::to_string(this->drone_id_);
+        image_topic_rgb = topic_name_prefix + topic_img_rgb;
         cam_info_topic = topic_name_prefix + topic_cam_info_color;
     }
     
