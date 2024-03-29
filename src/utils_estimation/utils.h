@@ -66,7 +66,7 @@ static void show_usage(const std::string& name) {
 {                                                                                                     \
   std::ofstream outFile(file_save_name);                                                              \
   if (!outFile) {                                                                                     \
-      std::cerr << "Error opening file for writing" << "\n";                                          \               
+      std::cerr << "Error opening file for writing" << "\n";                                          \
   }                                                                                                   \
   float time_print = dt;                                                                              \
   const auto& Xs_sim = collector.simu().Xs;                                                           \
