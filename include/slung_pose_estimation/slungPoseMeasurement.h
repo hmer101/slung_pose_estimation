@@ -29,7 +29,9 @@ private:
     std::string ns_; // Namespace of the node
     int drone_id_; // ID of the drone this node is running on
     int load_id_;
-    bool evaluate_; // Whether to evaluate the pose estimation vs ground truth
+
+    std::string env_;
+    bool evaluate_;           // Whether to evaluate the pose estimation vs ground truth
     int show_markers_config_; // 0 = No, 1 = Yes all, 2 = Drone 1 only
     float marker_edge_length_;
     rclcpp::Time start_time_;

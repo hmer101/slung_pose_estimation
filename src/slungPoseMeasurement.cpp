@@ -13,6 +13,9 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->ns_ = this->get_namespace();
     this->drone_id_ = utils::extract_id_from_name(this->ns_);
 
+    this->declare_parameter<int>("env", "phys");
+    this->get_parameter("env", this->env_);
+
     this->declare_parameter<int>("show_markers", 0);
     this->get_parameter("show_markers", this->show_markers_config_); 
 
@@ -55,11 +58,21 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
 
 
     // SUBSCRIBERS
-    std::string image_topic_rgb = this->ns_ + topic_img_rgb;
+    // Set camera topics
+    std::string image_topic_rgb = topic_img_rgb;
+    std::string cam_info_topic = topic_cam_info_color;
+
+    if(this->env_ == "sim"){
+        image_topic_rgb = this->ns_ + image_topic_rgb;
+        cam_info_topic = this->ns_ + cam_info_topic;
+    }else if(this->env_ == "phys"){
+        image_topic_rgb = this->ns_ + "camera" + std::to_string(this->drone_id_) + "/" + topic_img_rgb;
+        cam_info_topic = this->ns_ + "camera" + std::to_string(this->drone_id_) + "/" + topic_cam_info_color;
+    }
+    
     this->sub_img_drone_ = this->create_subscription<sensor_msgs::msg::Image>(
         image_topic_rgb, 10, std::bind(&SlungPoseMeasurement::clbk_image_received, this, std::placeholders::_1));
 
-    std::string cam_info_topic = this->ns_ + topic_cam_info_color;
     this->sub_cam_color_info = this->create_subscription<sensor_msgs::msg::CameraInfo>(
         cam_info_topic, 10, std::bind(&SlungPoseMeasurement::clbk_cam_color_info_received, this, std::placeholders::_1));
 
