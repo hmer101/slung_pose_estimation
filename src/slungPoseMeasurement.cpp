@@ -197,51 +197,51 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         }
 
         // TEMP: TEST SAVE
-        auto test_state = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
-        RCLCPP_INFO(this->get_logger(), "ABOUT TO SAVE");
-        this->log_pnp_error(this->logging_file_path_, test_state, this->state_marker_rel_camera_);
-        RCLCPP_INFO(this->get_logger(), "SAVED!!!");
+        // auto test_state = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
+        // RCLCPP_INFO(this->get_logger(), "ABOUT TO SAVE");
+        // this->log_pnp_error(this->logging_file_path_, test_state, this->state_marker_rel_camera_);
+        // RCLCPP_INFO(this->get_logger(), "SAVED!!!");
 
         // Evaluate the marker pose estimation against ground truth
-        // if (this->evaluate_) {
-        //     auto marker_gt_rel_cam_gt = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt","load_marker" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
+        if (this->evaluate_) {
+            auto marker_gt_rel_cam_gt = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt","load_marker" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
 
-        //     if (marker_gt_rel_cam_gt) { // && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
-        //         // Calculate the PnP error            
-        //         auto state_marker_rel_cam_gt = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
-        //         state_marker_rel_cam_gt.setPos(Eigen::Vector3d(marker_gt_rel_cam_gt->transform.translation.x, marker_gt_rel_cam_gt->transform.translation.y, marker_gt_rel_cam_gt->transform.translation.z));
-        //         state_marker_rel_cam_gt.setAtt(tf2::Quaternion(marker_gt_rel_cam_gt->transform.rotation.x, marker_gt_rel_cam_gt->transform.rotation.y, marker_gt_rel_cam_gt->transform.rotation.z, marker_gt_rel_cam_gt->transform.rotation.w));
+            if (marker_gt_rel_cam_gt) { // && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
+                // Calculate the PnP error            
+                auto state_marker_rel_cam_gt = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
+                state_marker_rel_cam_gt.setPos(Eigen::Vector3d(marker_gt_rel_cam_gt->transform.translation.x, marker_gt_rel_cam_gt->transform.translation.y, marker_gt_rel_cam_gt->transform.translation.z));
+                state_marker_rel_cam_gt.setAtt(tf2::Quaternion(marker_gt_rel_cam_gt->transform.rotation.x, marker_gt_rel_cam_gt->transform.rotation.y, marker_gt_rel_cam_gt->transform.rotation.z, marker_gt_rel_cam_gt->transform.rotation.w));
 
-        //         // Save the PnP error data to a file
-        //         this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_);
+                // Save the PnP error data to a file
+                this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_);
 
-        //         // PRINTING FOR DEBUGGING
-        //         // Print ground truth
-        //         // double yaw_gt, pitch_gt, roll_gt;
-        //         // state_marker_rel_cam_gt.getAttYPR(yaw_gt, pitch_gt, roll_gt);
+                // PRINTING FOR DEBUGGING
+                // Print ground truth
+                // double yaw_gt, pitch_gt, roll_gt;
+                // state_marker_rel_cam_gt.getAttYPR(yaw_gt, pitch_gt, roll_gt);
 
-        //         // yaw_gt = yaw_gt * 180.0 / M_PI;
-        //         // pitch_gt = pitch_gt * 180.0 / M_PI;
-        //         // roll_gt = roll_gt * 180.0 / M_PI;
+                // yaw_gt = yaw_gt * 180.0 / M_PI;
+                // pitch_gt = pitch_gt * 180.0 / M_PI;
+                // roll_gt = roll_gt * 180.0 / M_PI;
 
-        //         // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam ground truth: %f %f %f %f %f %f",
-        //         //             state_marker_rel_cam_gt.getPos()[0], state_marker_rel_cam_gt.getPos()[1], state_marker_rel_cam_gt.getPos()[2],
-        //         //             roll_gt, pitch_gt, yaw_gt);
+                // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam ground truth: %f %f %f %f %f %f",
+                //             state_marker_rel_cam_gt.getPos()[0], state_marker_rel_cam_gt.getPos()[1], state_marker_rel_cam_gt.getPos()[2],
+                //             roll_gt, pitch_gt, yaw_gt);
 
-        //         // Print the measured pose
-        //         // double yaw_meas, pitch_meas, roll_meas;
-        //         // this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
+                // Print the measured pose
+                // double yaw_meas, pitch_meas, roll_meas;
+                // this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
 
-        //         // yaw_meas = yaw_meas * 180.0 / M_PI;
-        //         // pitch_meas = pitch_meas * 180.0 / M_PI;
-        //         // roll_meas = roll_meas * 180.0 / M_PI;
+                // yaw_meas = yaw_meas * 180.0 / M_PI;
+                // pitch_meas = pitch_meas * 180.0 / M_PI;
+                // roll_meas = roll_meas * 180.0 / M_PI;
 
-        //         // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam measured: %f %f %f %f %f %f",
-        //         //             this->state_marker_rel_camera_.getPos()[0], this->state_marker_rel_camera_.getPos()[1], this->state_marker_rel_camera_.getPos()[2],
-        //         //             roll_meas, pitch_meas, yaw_meas);
+                // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam measured: %f %f %f %f %f %f",
+                //             this->state_marker_rel_camera_.getPos()[0], this->state_marker_rel_camera_.getPos()[1], this->state_marker_rel_camera_.getPos()[2],
+                //             roll_meas, pitch_meas, yaw_meas);
 
-        //     }
-        // }
+            }
+        }
     }    
 }
 
