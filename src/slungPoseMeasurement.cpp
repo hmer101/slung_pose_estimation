@@ -13,7 +13,7 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->ns_ = this->get_namespace();
     this->drone_id_ = utils::extract_id_from_name(this->ns_);
 
-    this->declare_parameter<int>("env", "phys");
+    this->declare_parameter<std::string>("env", "phys");
     this->get_parameter("env", this->env_);
 
     this->declare_parameter<int>("show_markers", 0);
