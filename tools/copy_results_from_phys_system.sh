@@ -40,7 +40,7 @@ ssh_and_copy_files() {
     local count=0  # Initialize a counter for launched devices
     local line_num=0  # Initialize a line counter
 
-    while IFS= read -r line; do
+    while IFS=' ' read -r uuid ip_addr; do #line
         # Start at start_num and end at num_devices
         line_num=$((line_num + 1))
 
@@ -54,7 +54,8 @@ ssh_and_copy_files() {
         fi
 
         # Extract info from txt file to ssh into devices
-        device_uuid=${line}
+        device_uuid=${uuid} #${line}
+        device_ip=${ip_addr}
         device_number=$((count + 1))
 
         # 0. Generate a local file list (each loop incase drones have same files - don't need to recopy)
@@ -62,7 +63,7 @@ ssh_and_copy_files() {
 
         # 1. Extract list of files present on the remote device in the data folder
         remote_file_list="$LOCAL_DATA_FOLDER/0_remote_files_${device_type}_$device_number.txt"
-        echo "ls $REMOTE_DATA_FOLDER" | balena ssh $device_uuid.local main > $remote_file_list 
+        echo "ls $REMOTE_DATA_FOLDER" | balena ssh $device_ip main > $remote_file_list #$device_uuid.local
 
         # 2. Find files missing from the local machine
         missing_file_list="$LOCAL_DATA_FOLDER/0_missing_files_${device_type}_$device_number.txt"
@@ -70,7 +71,7 @@ ssh_and_copy_files() {
 
         # 3. Copy the missing files from the remote device to the local machine
         while read -r file; do
-            echo "cat $REMOTE_DATA_FOLDER/$file" | balena ssh $device_uuid.local main > "$LOCAL_DATA_FOLDER/$file"
+            echo "cat $REMOTE_DATA_FOLDER/$file" | balena ssh $device_ip main > "$LOCAL_DATA_FOLDER/$file" #$device_uuid.local
         done < $missing_file_list
 
         # Increment the device count
