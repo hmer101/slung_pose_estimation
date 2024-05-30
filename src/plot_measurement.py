@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import math
+import numpy as np
 
 def read_log_file(filename):
     time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo = [], [], [], [], [], [], [], [], []
@@ -18,7 +19,19 @@ def read_log_file(filename):
                 distTrans.append(float(data[19]))
                 distAngGeo.append(float(data[20]))
 
+    # Convert to np
+    time = np.array(time) #[t - time[0] for t in time]
+    pos_gt = np.array(pos_gt)
+    rpy_gt = np.array(rpy_gt)
+    pos = np.array(pos)
+    rpy = np.array(rpy)
+    pos_err = np.array(pos_err)
+    att_err = np.array(att_err)
+    distTrans = np.array(distTrans)
+    distAngGeo = np.array(distAngGeo)
+
     return time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo
+
 
 def plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size): #, pos_err, att_err, distTrans, distAngGeo):
     plt.figure(figsize=(15, 10))
@@ -120,6 +133,27 @@ def plot_trans_geo(time, distTrans, distAngGeo, title_font_size, axes_label_font
     plt.show()
 
 
+# Convert all angles to degrees from a list of RPY lists
+def rad_2_deg_rpy(rpy_rad):
+    return [[r * 180 / math.pi for r in rpy] for rpy in rpy_rad]
+
+# Unwrap phases and convert to degrees
+def process_data(time, rpy_gt, rpy):
+    ## Perform data transformations
+    # Set first time as 0 (note this may not be good when comparing between multiple drones' measurements)
+    time = time - time[0] 
+
+    # Phase unwrap
+    rpy_gt = np.unwrap(rpy_gt, axis=0)
+    rpy = np.unwrap(rpy, axis=0)
+    att_err = rpy - rpy_gt
+    
+    # Convert to deg
+    rpy_gt = rpy_gt*180 / math.pi
+    rpy = rpy*180 / math.pi
+    att_err = att_err*180 / math.pi
+
+    return time, rpy_gt, rpy, att_err
 
 def main():
     # Set parameters
@@ -129,16 +163,12 @@ def main():
     ticks_font_size = 10
 
     # Retrieve data from log file
-    path = '/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + 'pnp_errors_drone1.txt'  # replace with your log file path
+    path = '/home/harvey/px4_ros_com_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
+    filename = path + '20240528_170457_measurement_drone2.txt' #'pnp_errors_drone1.txt'  # replace with your log file path
     time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo = read_log_file(filename)
     
-    # Convert
-    time = [t - time[0] for t in time]
-    rpy_gt = [[r * 180 / math.pi for r in rpy] for rpy in rpy_gt]
-    rpy = [[r * 180 / math.pi for r in rpy] for rpy in rpy]
-    att_err = [[r * 180 / math.pi for r in rpy] for rpy in att_err]
-    #distAngGeo = [d * 180 / math.pi for d in distAngGeo]
+    # Process data
+    time, rpy_gt, rpy, att_err = process_data(time, rpy_gt, rpy)
 
     # Plot
     plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size) #, pos_err, att_err, distTrans, distAngGeo)
