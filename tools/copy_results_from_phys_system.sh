@@ -11,7 +11,7 @@ START_DRONE_NUM=1  # Set the starting drone number
 START_LOAD_NUM=1  # Set the starting load number
 
 REMOTE_DATA_FOLDER="/home/ws_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data"  # Set the remote data folder to copy from
-LOCAL_DATA_FOLDER="/home/harvey/px4_ros_com_ros2/src/slung_pose_estimation/data"  # Set the local data folder to copy to
+LOCAL_DATA_FOLDER="/home/harvey/px4_ros_com_ros2/data" #src/slung_pose_estimation/data"  # Set the local data folder to copy to
 
 # Find the files present in the remote file list that are not present in the local file list
 find_missing_local_files(){
@@ -89,3 +89,5 @@ ssh_and_copy_files "drone" $NUM_DRONES $START_DRONE_NUM "../../swarm_load_carry/
 
 # Balena SSH into loads and copy the results
 ssh_and_copy_files "load" $NUM_LOAD $START_LOAD_NUM "../../swarm_load_carry/config/phys_load_uuid.txt" $local_file_list
+
+

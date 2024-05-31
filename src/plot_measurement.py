@@ -164,7 +164,7 @@ def main():
 
     # Retrieve data from log file
     path = '/home/harvey/px4_ros_com_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + '20240528_170457_measurement_drone2.txt' #'pnp_errors_drone1.txt'  # replace with your log file path
+    filename = path + '20240530_drone3.txt' #'20240530_drone1.txt'  # replace with your log file path
     time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo = read_log_file(filename)
     
     # Process data
