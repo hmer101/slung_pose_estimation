@@ -205,15 +205,26 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         // Evaluate the marker pose estimation against ground truth
         if (this->evaluate_) {
             auto marker_gt_rel_cam_gt = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt","load_marker" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
+            auto drone_rel_world_gt = utils::lookup_tf("world","drone" + std::to_string(this->drone_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
+            auto load_rel_world_gt = utils::lookup_tf("world","load" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
 
-            if (marker_gt_rel_cam_gt) { // && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
+            if (marker_gt_rel_cam_gt && drone_rel_world_gt && load_rel_world_gt) { // && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
+                // Store drone and load gt states for reference
+                droneState::State state_drone_rel_world = droneState::State("drone" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
+                state_drone_rel_world.setPos(Eigen::Vector3d(drone_rel_world_gt->transform.translation.x, drone_rel_world_gt->transform.translation.y, drone_rel_world_gt->transform.translation.z));
+                state_drone_rel_world.setAtt(tf2::Quaternion(drone_rel_world_gt->transform.rotation.x, drone_rel_world_gt->transform.rotation.y, drone_rel_world_gt->transform.rotation.z, drone_rel_world_gt->transform.rotation.w));
+
+                droneState::State state_load_rel_world = droneState::State("load" + std::to_string(this->load_id_) + "_gt", droneState::CS_type::XYZ);
+                state_load_rel_world.setPos(Eigen::Vector3d(load_rel_world_gt->transform.translation.x, load_rel_world_gt->transform.translation.y, load_rel_world_gt->transform.translation.z));
+                state_load_rel_world.setAtt(tf2::Quaternion(load_rel_world_gt->transform.rotation.x, load_rel_world_gt->transform.rotation.y, load_rel_world_gt->transform.rotation.z, load_rel_world_gt->transform.rotation.w));
+                
                 // Calculate the PnP error            
                 auto state_marker_rel_cam_gt = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
                 state_marker_rel_cam_gt.setPos(Eigen::Vector3d(marker_gt_rel_cam_gt->transform.translation.x, marker_gt_rel_cam_gt->transform.translation.y, marker_gt_rel_cam_gt->transform.translation.z));
                 state_marker_rel_cam_gt.setAtt(tf2::Quaternion(marker_gt_rel_cam_gt->transform.rotation.x, marker_gt_rel_cam_gt->transform.rotation.y, marker_gt_rel_cam_gt->transform.rotation.z, marker_gt_rel_cam_gt->transform.rotation.w));
-
+                
                 // Save the PnP error data to a file
-                this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_);
+                this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_, state_drone_rel_world, state_load_rel_world);
 
                 // PRINTING FOR DEBUGGING
                 // Print ground truth
@@ -245,7 +256,7 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
     }    
 }
 
-void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const droneState::State& state_marker_rel_cam_gt, const droneState::State& state_marker_rel_cam){ //const std::string& filename, double distTrans, double distAngGeo) {
+void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const droneState::State& state_marker_rel_cam_gt, const droneState::State& state_marker_rel_cam, const droneState::State& state_drone_rel_world, const droneState::State& state_load_rel_world){ //const std::string& filename, double distTrans, double distAngGeo) {
     std::ofstream logFile;
     logFile.open(filename, std::ios::app); // Open in append mode
 
@@ -254,9 +265,13 @@ void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const dron
 
     Eigen::Vector3d pos_gt = state_marker_rel_cam_gt.getPos();
     Eigen::Vector3d pos = state_marker_rel_cam.getPos();
+    Eigen::Vector3d pos_drone_rel_world = state_drone_rel_world.getPos();
+    Eigen::Vector3d pos_load_rel_world = state_load_rel_world.getPos();
 
     Eigen::Vector3d rpy_gt = state_marker_rel_cam_gt.getAttYPR();
     Eigen::Vector3d rpy = state_marker_rel_cam.getAttYPR();
+    Eigen::Vector3d rpy_drone_rel_world = state_drone_rel_world.getAttYPR();
+    Eigen::Vector3d rpy_load_rel_world = state_load_rel_world.getAttYPR();
     
     Eigen::Vector3d pos_err = pos - pos_gt;
     Eigen::Vector3d att_err = rpy - rpy_gt;
@@ -265,14 +280,28 @@ void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const dron
     float distAngGeo = state_marker_rel_cam.distAngGeo(state_marker_rel_cam_gt)*180.0 / M_PI;
     
     if (logFile.is_open()) {
-        logFile << time << " " 
+        logFile << time << " "
                 << pos_gt.x() << " " << pos_gt.y() << " " << pos_gt.z() << " "
                 << rpy_gt.x() << " " << rpy_gt.y() << " " << rpy_gt.z() << " "
                 << pos.x() << " " << pos.y() << " " << pos.z() << " "
                 << rpy.x() << " " << rpy.y() << " " << rpy.z() << " "
                 << pos_err.x() << " " << pos_err.y() << " " << pos_err.z() << " "
                 << att_err.x() << " " << att_err.y() << " " << att_err.z() << " "
-                << distTrans << " " << distAngGeo << std::endl;
+                << distTrans << " " << distAngGeo << " "
+                << pos_drone_rel_world.x() << " " << pos_drone_rel_world.y() << " " << pos_drone_rel_world.z() << " "
+                << rpy_drone_rel_world.x() << " " << rpy_drone_rel_world.y() << " " << rpy_drone_rel_world.z() << " "
+                << pos_load_rel_world.x() << " " << pos_load_rel_world.y() << " " << pos_load_rel_world.z() << " "
+                << rpy_load_rel_world.x() << " " << rpy_load_rel_world.y() << " " << rpy_load_rel_world.z() << std::endl;
+
+        // Loop through each drone's ground truth state and log their positions
+        // for (const auto &drone_rel_world : states_drones_rel_world)
+        // {
+        //     Eigen::Vector3d drone_pos_gt = drone_rel_world.getPos();
+        //     Eigen::Vector3d drone_rpy_gt = drone_rel_world.getAttYPR();
+        //     logFile << drone_pos_gt.x() << " " << drone_pos_gt.y() << " " << drone_pos_gt.z() << " ";
+        //     logFile << drone_rpy_gt.x() << " " << drone_rpy_gt.y() << " " << drone_rpy_gt.z() << " ";
+        // }
+
         logFile.close();
     }else {
         RCLCPP_ERROR(this->get_logger(), "Unable to open file for logging");

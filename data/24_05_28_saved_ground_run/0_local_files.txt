@@ -1,0 +1,13 @@
+0_local_files.txt
+0_missing_files_drone_1.txt
+0_missing_files_drone_2.txt
+0_missing_files_drone_3.txt
+0_missing_files_load_1.txt
+0_remote_files_drone_1.txt
+0_remote_files_drone_2.txt
+0_remote_files_drone_3.txt
+0_remote_files_load_1.txt
+20240527_212418_measurement_drone1.txt
+20240528_170457_measurement_drone2.txt
+20240528_170501_measurement_drone1.txt
+placeholder.txt

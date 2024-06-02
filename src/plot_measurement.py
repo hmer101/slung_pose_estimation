@@ -4,11 +4,13 @@ import numpy as np
 
 def read_log_file(filename):
     time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo = [], [], [], [], [], [], [], [], []
+    pos_drone_rel_world, rpy_drone_rel_world = [], []
+    pos_load_rel_world, rpy_load_rel_world = [], []
     
     with open(filename, 'r') as file:
         for line in file:
             data = line.split()
-            if len(data) == 21:
+            if len(data) == 33:
                 time.append(float(data[0]))
                 pos_gt.append([float(data[1]), float(data[2]), float(data[3])])
                 rpy_gt.append([float(data[4]), float(data[5]), float(data[6])])
@@ -18,6 +20,10 @@ def read_log_file(filename):
                 att_err.append([float(data[16]), float(data[17]), float(data[18])])
                 distTrans.append(float(data[19]))
                 distAngGeo.append(float(data[20]))
+                pos_drone_rel_world.append([float(data[21]), float(data[22]), float(data[23])])
+                rpy_drone_rel_world.append([float(data[24]), float(data[25]), float(data[26])])
+                pos_load_rel_world.append([float(data[27]), float(data[28]), float(data[29])])
+                rpy_load_rel_world.append([float(data[30]), float(data[31]), float(data[32])])
 
     # Convert to np
     time = np.array(time) #[t - time[0] for t in time]
@@ -29,8 +35,12 @@ def read_log_file(filename):
     att_err = np.array(att_err)
     distTrans = np.array(distTrans)
     distAngGeo = np.array(distAngGeo)
+    pos_drone_rel_world = np.array(pos_drone_rel_world)
+    rpy_drone_rel_world = np.array(rpy_drone_rel_world)
+    pos_load_rel_world = np.array(pos_load_rel_world)
+    rpy_load_rel_world = np.array(rpy_load_rel_world)
 
-    return time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo
+    return time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world
 
 
 def plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size): #, pos_err, att_err, distTrans, distAngGeo):
@@ -132,6 +142,47 @@ def plot_trans_geo(time, distTrans, distAngGeo, title_font_size, axes_label_font
     plt.tight_layout()
     plt.show()
 
+def plot_trajectory(time, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world, 
+                    title_font_size=16, axes_label_font_size=14, legend_font_size=12, ticks_font_size=10):
+    plt.figure(figsize=(15, 10))
+
+    # Position of Drone and Load Relative to the World
+    plt.subplot(2, 1, 1)
+    pos_drone_rel_world = list(zip(*pos_drone_rel_world))
+    pos_load_rel_world = list(zip(*pos_load_rel_world))
+    plt.plot(time, pos_drone_rel_world[0], label='drone_pos_x', color='blue')
+    plt.plot(time, pos_drone_rel_world[1], label='drone_pos_y', color='green')
+    plt.plot(time, pos_drone_rel_world[2], label='drone_pos_z', color='red')
+    plt.plot(time, pos_load_rel_world[0], label='load_pos_x', linestyle='dashed', color='blue')
+    plt.plot(time, pos_load_rel_world[1], label='load_pos_y', linestyle='dashed', color='green')
+    plt.plot(time, pos_load_rel_world[2], label='load_pos_z', linestyle='dashed', color='red')
+    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Position (m)', fontsize=axes_label_font_size)
+    plt.title('Position of Drone and Load Relative to the World', fontsize=title_font_size)
+    plt.legend(fontsize=legend_font_size)
+    plt.xticks(fontsize=ticks_font_size)
+    plt.yticks(fontsize=ticks_font_size)
+
+    # Orientation (RPY) of Drone and Load Relative to the World
+    plt.subplot(2, 1, 2)
+    rpy_drone_rel_world = list(zip(*rpy_drone_rel_world))
+    rpy_load_rel_world = list(zip(*rpy_load_rel_world))
+    plt.plot(time, rpy_drone_rel_world[0], label='drone_rpy_roll', color='blue')
+    plt.plot(time, rpy_drone_rel_world[1], label='drone_rpy_pitch', color='green')
+    plt.plot(time, rpy_drone_rel_world[2], label='drone_rpy_yaw', color='red')
+    plt.plot(time, rpy_load_rel_world[0], label='load_rpy_roll', linestyle='dashed', color='blue')
+    plt.plot(time, rpy_load_rel_world[1], label='load_rpy_pitch', linestyle='dashed', color='green')
+    plt.plot(time, rpy_load_rel_world[2], label='load_rpy_yaw', linestyle='dashed', color='red')
+    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Orientation (Degrees)', fontsize=axes_label_font_size)
+    plt.title('Orientation of Drone and Load Relative to the World', fontsize=title_font_size)
+    plt.legend(fontsize=legend_font_size)
+    plt.xticks(fontsize=ticks_font_size)
+    plt.yticks(fontsize=ticks_font_size)
+
+    plt.tight_layout()
+    plt.show()
+
 
 # Convert all angles to degrees from a list of RPY lists
 def rad_2_deg_rpy(rpy_rad):
@@ -164,8 +215,8 @@ def main():
 
     # Retrieve data from log file
     path = '/home/harvey/px4_ros_com_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + '20240530_drone3.txt' #'20240530_drone1.txt'  # replace with your log file path
-    time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo = read_log_file(filename)
+    filename = path + '20240602_drone2.txt' #'20240530_drone1.txt'  # replace with your log file path
+    time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world = read_log_file(filename)
     
     # Process data
     time, rpy_gt, rpy, att_err = process_data(time, rpy_gt, rpy)
@@ -174,6 +225,8 @@ def main():
     plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size) #, pos_err, att_err, distTrans, distAngGeo)
     plot_errors(time, pos_err, att_err, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
     plot_trans_geo(time, distTrans, distAngGeo, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    plot_trajectory(time, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world, 
+                    title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
 if __name__ == '__main__':
     main()

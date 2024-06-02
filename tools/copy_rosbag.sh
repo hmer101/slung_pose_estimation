@@ -1,26 +1,58 @@
 #!/bin/bash
 
 # Define the SSH details
-REMOTE_USER="root"
-REMOTE_HOST="remote_host"
-REMOTE_DIR="/path/to/dir"
-LOCAL_DIR="/path/to/local/dir"
+UUID_FILE="/home/harvey/px4_ros_com_ros2/src/swarm_load_carry/config/phys_load_uuid.txt" #"phys_drones_uuid.txt"
+DEVICE_INDEX=1
 
-# SSH into the remote device and find the latest file
-LATEST_FILE=$(ssh $REMOTE_USER@$REMOTE_HOST "find $REMOTE_DIR -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2")
+REMOTE_DIR="/home/ws_ros2/data"
+LOCAL_DIR="/home/harvey/px4_ros_com_ros2/data"
 
-# Check if the LATEST_FILE variable is not empty
-if [ -n "$LATEST_FILE" ]; then
-  # Copy the latest file to the local directory
-  scp $REMOTE_USER@$REMOTE_HOST:"$LATEST_FILE" "$LOCAL_DIR"
-  echo "Latest file copied to $LOCAL_DIR"
-else
-  echo "No file found in the specified directory."
-fi
+# Extract the remote host IP address
+get_remote_ip() {
+    local uuid_file=$1
+    local device_index=$2
 
-# export TMP_FILE=frames_2024-05-30_17.39.51.pdf
-# echo "balena-engine cp c6c68d7f44c9:/home/$TMP_FILE /tmp/rosbag_0.db3" | balena ssh 192.168.3.1
-# scp -P 22222 root@192.168.3.1:/tmp/$TMP_FILE ~/$TMP_FILE
+    local line_num=0  # Initialize a line counter
 
-# Balena SSH into loads and copy the results
-#ssh_and_copy_files "load" $NUM_LOAD $START_LOAD_NUM "../../swarm_load_carry/config/phys_load_uuid.txt" $local_file_list
+    # Read the UUID and IP address from the file
+    while IFS=' ' read -r uuid ip_addr; do #line
+        # Skip lines until device_index is reached
+        line_num=$((line_num + 1))
+
+        if [ "$line_num" -lt "$device_index" ]; then
+            continue  
+        fi
+
+        # Extract info from txt file to ssh into devices
+        device_uuid=${uuid}
+        device_ip=${ip_addr}
+
+        # Return the IP address of the remote host
+        echo "$device_ip"
+        return 0
+        
+    done < "$uuid_file"
+}
+
+# Get the remote IP address
+remote_ip=$(get_remote_ip $UUID_FILE $DEVICE_INDEX)
+#echo "The remote IP address is: $remote_ip"
+
+# Find the latest file in the remote directory
+LATEST_FILE=$(echo "find $REMOTE_DIR -type f -printf '%p\n' | sort | tail -n 1" | balena ssh $remote_ip main)
+LATEST_DIR=$(dirname "$LATEST_FILE")
+LATEST_FOLDER=$(basename "$LATEST_DIR")
+
+
+# Step 1: Copy the entire folder from the container to the remote host
+CONTAINER_NAME=$(echo "balena-engine ps --format '{{.Names}}'" | balena ssh $remote_ip | head -n 1)
+echo "balena-engine cp $CONTAINER_NAME:$LATEST_DIR /tmp/$LATEST_FOLDER" | balena ssh $remote_ip
+
+# Step 2: Copy the folder from the remote host to the local machine
+scp -r -P 22222 root@$remote_ip:/tmp/$LATEST_FOLDER $LOCAL_DIR/
+
+# Clean up the temporary folder on the remote host
+echo "rm -rf /tmp/$LATEST_FOLDER" | balena ssh $remote_ip
+
+# Display the copied folder
+echo "The latest data folder has been copied to: $LOCAL_DIR/$LATEST_FOLDER"
