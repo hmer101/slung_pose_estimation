@@ -10,7 +10,7 @@ def read_log_file(filename):
     with open(filename, 'r') as file:
         for line in file:
             data = line.split()
-            if len(data) == 33:
+            if len(data) == 21: #33
                 time.append(float(data[0]))
                 pos_gt.append([float(data[1]), float(data[2]), float(data[3])])
                 rpy_gt.append([float(data[4]), float(data[5]), float(data[6])])
@@ -20,10 +20,10 @@ def read_log_file(filename):
                 att_err.append([float(data[16]), float(data[17]), float(data[18])])
                 distTrans.append(float(data[19]))
                 distAngGeo.append(float(data[20]))
-                pos_drone_rel_world.append([float(data[21]), float(data[22]), float(data[23])])
-                rpy_drone_rel_world.append([float(data[24]), float(data[25]), float(data[26])])
-                pos_load_rel_world.append([float(data[27]), float(data[28]), float(data[29])])
-                rpy_load_rel_world.append([float(data[30]), float(data[31]), float(data[32])])
+                # pos_drone_rel_world.append([float(data[21]), float(data[22]), float(data[23])])
+                # rpy_drone_rel_world.append([float(data[24]), float(data[25]), float(data[26])])
+                # pos_load_rel_world.append([float(data[27]), float(data[28]), float(data[29])])
+                # rpy_load_rel_world.append([float(data[30]), float(data[31]), float(data[32])])
 
     # Convert to np
     time = np.array(time) #[t - time[0] for t in time]
@@ -192,11 +192,19 @@ def rad_2_deg_rpy(rpy_rad):
 def process_data(time, rpy_gt, rpy):
     ## Perform data transformations
     # Set first time as 0 (note this may not be good when comparing between multiple drones' measurements)
-    time = time - time[0] 
+    #time = time - time[0] 
 
     # Phase unwrap
     rpy_gt = np.unwrap(rpy_gt, axis=0)
     rpy = np.unwrap(rpy, axis=0)
+
+     # Ensure rpy and rpy_gt are in the same phase for each column independently
+    for i in range(rpy.shape[1]):
+        phase_diff = np.mean(rpy_gt[:, i] - rpy[:, i])
+        phase_adjustment = round(phase_diff / (2 * np.pi)) * (2 * np.pi)
+        rpy[:, i] += phase_adjustment
+    
+    # Calculate attitude error
     att_err = rpy - rpy_gt
     
     # Convert to deg
@@ -204,7 +212,7 @@ def process_data(time, rpy_gt, rpy):
     rpy = rpy*180 / math.pi
     att_err = att_err*180 / math.pi
 
-    return time, rpy_gt, rpy, att_err
+    return rpy_gt, rpy, att_err #time
 
 def main():
     # Set parameters
@@ -213,20 +221,60 @@ def main():
     legend_font_size = 12
     ticks_font_size = 10
 
+    num_drones = 3
+    start_drone_num = 1
+    plot_data_for = [1, 2, 3] #[1, 2, 3] # Drones to plot data for
+
     # Retrieve data from log file
     path = '/home/harvey/px4_ros_com_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + '20240602_drone2.txt' #'20240530_drone1.txt'  # replace with your log file path
-    time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world = read_log_file(filename)
+    filename_common = path + '20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
+
+    # Store data from all drones
+    time = [None]*num_drones # Get starting times from all drones to align the data
+    pos_gt = [None]*num_drones
+    rpy_gt = [None]*num_drones
+    pos = [None]*num_drones
+    rpy = [None]*num_drones
+    pos_err = [None]*num_drones
+    att_err = [None]*num_drones
+    distTrans = [None]*num_drones
+    distAngGeo = [None]*num_drones
+    pos_drone_rel_world = [None]*num_drones
+    rpy_drone_rel_world = [None]*num_drones
+    pos_load_rel_world = [None]*num_drones
+    rpy_load_rel_world = [None]*num_drones
+
+    for i in range(num_drones):
+        filename = filename_common + str(i+start_drone_num) + '.txt'
+        time[i], pos_gt[i], rpy_gt[i], pos[i], rpy[i], pos_err[i], att_err[i], distTrans[i], distAngGeo[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i] = read_log_file(filename)
+    
+    # Find start time
+    time_start = min([times[0] for times in time])
+    
+    # Plot data for all drones selected to do so, relative to start time 
+    plot_drone_indicies = [drone_num - start_drone_num for drone_num in plot_data_for] 
+    for i in plot_drone_indicies:
+        time[i] = time[i] - time_start
+        rpy_gt_proc, rpy_proc, att_err_proc = process_data(time[i], rpy_gt[i], rpy[i])
+        #plot_data(time[i], pos_gt[i], rpy_gt_proc, pos[i], rpy_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        #plot_errors(time[i], pos_err[i], att_err_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        plot_trans_geo(time[i], distTrans[i], distAngGeo[i], title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        #plot_trajectory(time[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i], 
+        #            title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+
+
+    # Single drone
+    #time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world = read_log_file(filename)
     
     # Process data
-    time, rpy_gt, rpy, att_err = process_data(time, rpy_gt, rpy)
+    #time, rpy_gt, rpy, att_err = process_data(time, rpy_gt, rpy)
 
     # Plot
-    plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size) #, pos_err, att_err, distTrans, distAngGeo)
-    plot_errors(time, pos_err, att_err, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-    plot_trans_geo(time, distTrans, distAngGeo, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-    plot_trajectory(time, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world, 
-                    title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    # plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size) #, pos_err, att_err, distTrans, distAngGeo)
+    # plot_errors(time, pos_err, att_err, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    #plot_trans_geo(time, distTrans, distAngGeo, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    # plot_trajectory(time, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world, 
+    #                title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
 if __name__ == '__main__':
     main()

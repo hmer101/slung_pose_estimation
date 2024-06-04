@@ -41,7 +41,7 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
     std::stringstream ss;
-    ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S_"); // Format the time
+    ss << std::put_time(std::localtime(&in_time_t), "%Y_%m_%d_%H_%M_%S_"); // Format the time
 
     // Set the logging file path
     std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
