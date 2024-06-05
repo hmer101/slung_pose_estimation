@@ -1,3 +1,4 @@
+#include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 
@@ -56,6 +57,9 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock()); //tf2_ros::Buffer(std::make_shared<rclcpp::Clock>());
     this->tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*(this->tf_buffer_));
 
+    // ROS2
+    rclcpp::QoS qos_profile_cam = rclcpp::SensorDataQoS();
+    rclcpp::QoS qos_profile_drone_system = rclcpp::SensorDataQoS();
 
     // SUBSCRIBERS
     // Set camera topics
@@ -72,14 +76,14 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     }
     
     this->sub_img_drone_ = this->create_subscription<sensor_msgs::msg::Image>(
-        image_topic_rgb, 10, std::bind(&SlungPoseMeasurement::clbk_image_received, this, std::placeholders::_1));
+        image_topic_rgb, qos_profile_cam, std::bind(&SlungPoseMeasurement::clbk_image_received, this, std::placeholders::_1));
 
     this->sub_cam_color_info = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-        cam_info_topic, 10, std::bind(&SlungPoseMeasurement::clbk_cam_color_info_received, this, std::placeholders::_1));
+        cam_info_topic, qos_profile_cam, std::bind(&SlungPoseMeasurement::clbk_cam_color_info_received, this, std::placeholders::_1)); 
 
     // PUBLISHERS
     this->pub_marker_rel_camera_ = this->create_publisher<geometry_msgs::msg::Pose>(
-        this->ns_ + "/out/marker_rel_camera", 10);
+        this->ns_ + "/out/marker_rel_camera", qos_profile_drone_system);
 
 
     // SETUP

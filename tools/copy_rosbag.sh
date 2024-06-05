@@ -38,16 +38,16 @@ get_remote_ip() {
 remote_ip=$(get_remote_ip $UUID_FILE $DEVICE_INDEX)
 #echo "The remote IP address is: $remote_ip"
 
+# Find the latest file in the remote directory (to account for the new rosbag that has started)
+LATEST_FILE=$(echo "find $REMOTE_DIR -type f -printf '%p\n' | sort | tail -n 1" | balena ssh $remote_ip main) #tail -n 1
+LATEST_DIR=$(dirname "$LATEST_FILE")
+LATEST_FOLDER=$(basename "$LATEST_DIR")
+
 # Kill ros2 on the host such that the metadata is saved 
 echo "pkill -f 'opt/ros/humble'" | balena ssh $remote_ip main
 
 # Wait until new rosbag starts on remote host
 sleep 10
-
-# Find the second to latest file in the remote directory (to account for the new rosbag that has started)
-LATEST_FILE=$(echo "find $REMOTE_DIR -type f -printf '%p\n' | sort | tail -n 2" | balena ssh $remote_ip main) #tail -n 1
-LATEST_DIR=$(dirname "$LATEST_FILE")
-LATEST_FOLDER=$(basename "$LATEST_DIR")
 
 # Step 1: Copy the entire folder from the container to the remote host
 CONTAINER_NAME=$(echo "balena-engine ps --format '{{.Names}}'" | balena ssh $remote_ip | head -n 1)
