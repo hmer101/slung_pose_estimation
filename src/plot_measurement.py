@@ -256,11 +256,11 @@ def main():
     for i in plot_drone_indicies:
         time[i] = time[i] - time_start
         rpy_gt_proc, rpy_proc, att_err_proc = process_data(time[i], rpy_gt[i], rpy[i])
-        #plot_data(time[i], pos_gt[i], rpy_gt_proc, pos[i], rpy_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-        #plot_errors(time[i], pos_err[i], att_err_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        plot_data(time[i], pos_gt[i], rpy_gt_proc, pos[i], rpy_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        plot_errors(time[i], pos_err[i], att_err_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
         plot_trans_geo(time[i], distTrans[i], distAngGeo[i], title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-        #plot_trajectory(time[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i], 
-        #            title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        plot_trajectory(time[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i], 
+                    title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
 
     # Single drone
