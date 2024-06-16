@@ -10,7 +10,7 @@ def read_log_file(filename):
     with open(filename, 'r') as file:
         for line in file:
             data = line.split()
-            if len(data) == 21: #33
+            if len(data) == 33: #21:
                 time.append(float(data[0]))
                 pos_gt.append([float(data[1]), float(data[2]), float(data[3])])
                 rpy_gt.append([float(data[4]), float(data[5]), float(data[6])])
@@ -20,10 +20,10 @@ def read_log_file(filename):
                 att_err.append([float(data[16]), float(data[17]), float(data[18])])
                 distTrans.append(float(data[19]))
                 distAngGeo.append(float(data[20]))
-                # pos_drone_rel_world.append([float(data[21]), float(data[22]), float(data[23])])
-                # rpy_drone_rel_world.append([float(data[24]), float(data[25]), float(data[26])])
-                # pos_load_rel_world.append([float(data[27]), float(data[28]), float(data[29])])
-                # rpy_load_rel_world.append([float(data[30]), float(data[31]), float(data[32])])
+                pos_drone_rel_world.append([float(data[21]), float(data[22]), float(data[23])])
+                rpy_drone_rel_world.append([float(data[24]), float(data[25]), float(data[26])])
+                pos_load_rel_world.append([float(data[27]), float(data[28]), float(data[29])])
+                rpy_load_rel_world.append([float(data[30]), float(data[31]), float(data[32])])
 
     # Convert to np
     time = np.array(time) #[t - time[0] for t in time]
@@ -221,13 +221,13 @@ def main():
     legend_font_size = 12
     ticks_font_size = 10
 
-    num_drones = 3
+    num_drones = 1
     start_drone_num = 1
-    plot_data_for = [1, 2, 3] #[1, 2, 3] # Drones to plot data for
+    plot_data_for = [1] #, 2, 3] #[1, 2, 3] # Drones to plot data for
 
     # Retrieve data from log file
     path = '/home/harvey/px4_ros_com_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename_common = path + '20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
+    filename_common = path + '2024_06_09_measurement_drone' #'20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
 
     # Store data from all drones
     time = [None]*num_drones # Get starting times from all drones to align the data

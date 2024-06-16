@@ -244,16 +244,16 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
                 //             roll_gt, pitch_gt, yaw_gt);
 
                 // Print the measured pose
-                // double yaw_meas, pitch_meas, roll_meas;
-                // this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
+                double yaw_meas, pitch_meas, roll_meas;
+                this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
 
-                // yaw_meas = yaw_meas * 180.0 / M_PI;
-                // pitch_meas = pitch_meas * 180.0 / M_PI;
-                // roll_meas = roll_meas * 180.0 / M_PI;
+                yaw_meas = yaw_meas * 180.0 / M_PI;
+                pitch_meas = pitch_meas * 180.0 / M_PI;
+                roll_meas = roll_meas * 180.0 / M_PI;
 
-                // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam measured: %f %f %f %f %f %f",
-                //             this->state_marker_rel_camera_.getPos()[0], this->state_marker_rel_camera_.getPos()[1], this->state_marker_rel_camera_.getPos()[2],
-                //             roll_meas, pitch_meas, yaw_meas);
+                RCLCPP_INFO(this->get_logger(), "Marker pose rel cam measured: %f %f %f %f %f %f",
+                            this->state_marker_rel_camera_.getPos()[0], this->state_marker_rel_camera_.getPos()[1], this->state_marker_rel_camera_.getPos()[2],
+                            roll_meas, pitch_meas, yaw_meas);
 
             }
         }
