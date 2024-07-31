@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the SSH details
-UUID_FILE="/home/harvey/px4_ros_com_ros2/src/swarm_load_carry/config/phys_load_uuid.txt" #"phys_drones_uuid.txt"
+UUID_FILE="/home/harvey/px4_ros_com_ros2/src/multi_drone_slung_load/config/phys_load_uuid.txt" #"phys_drones_uuid.txt"
 DEVICE_INDEX=1
 
 REMOTE_DIR="/home/ws_ros2/data" #ws_ros2

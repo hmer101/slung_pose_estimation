@@ -85,9 +85,9 @@ local_file_list="$LOCAL_DATA_FOLDER/0_local_files.txt"
 # ls $LOCAL_DATA_FOLDER > $local_file_list
 
 # Balena SSH into drones and copy the results
-ssh_and_copy_files "drone" $NUM_DRONES $START_DRONE_NUM "../../swarm_load_carry/config/phys_drones_uuid.txt" $local_file_list
+ssh_and_copy_files "drone" $NUM_DRONES $START_DRONE_NUM "../../multi_drone_slung_load/config/phys_drones_uuid.txt" $local_file_list
 
 # Balena SSH into loads and copy the results
-ssh_and_copy_files "load" $NUM_LOAD $START_LOAD_NUM "../../swarm_load_carry/config/phys_load_uuid.txt" $local_file_list
+ssh_and_copy_files "load" $NUM_LOAD $START_LOAD_NUM "../../multi_drone_slung_load/config/phys_load_uuid.txt" $local_file_list
 
 
