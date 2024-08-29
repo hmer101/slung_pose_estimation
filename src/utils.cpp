@@ -66,7 +66,7 @@ namespace utils {
 
         return state2;
     }
-
+    
     // MATH
     // Helper function to calculate the trace of a 3x3 matrix
     float getTrace(const tf2::Matrix3x3& matrix) {

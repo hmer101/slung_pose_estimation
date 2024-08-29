@@ -140,12 +140,6 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
 
     this->detect_marker(outputImage, targetCorners, targetId);
 
-    // TEMP: TEST SAVE
-    // auto test_state = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
-    // RCLCPP_INFO(this->get_logger(), "ABOUT TO SAVE");
-    // this->log_pnp_error(this->logging_file_path_, test_state, this->state_marker_rel_camera_);
-    // RCLCPP_INFO(this->get_logger(), "SAVED!!!");
-
     // Perform marker pose estimation if the target marker is detected and camera calibration matrix is set
     if (!targetCorners.empty() && this->flag_cam_k_set_) {
         // ESTIMATE MARKER POSE

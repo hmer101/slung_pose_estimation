@@ -6,6 +6,9 @@ project(slung_pose_estimation)
 #   set(CMAKE_CXX_STANDARD 14)
 # endif()
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 #set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 option(WITH_PLOTS "Build with plot support" ON) #ON
 
@@ -76,6 +79,7 @@ add_library(utils src/utils.cpp)
 add_executable(slung_pose_measurement src/slungPoseMeasurement.cpp)
 add_executable(tester src/tester.cpp)
 add_executable(slung_pose_estimation src/slungPoseEstimation.cpp)
+add_executable(logger src/logger.cpp)
 
 
 # Specify libraries to link a library or executable target against
@@ -103,10 +107,16 @@ target_link_libraries(State
   utils
 )
 
+target_link_libraries(logger
+  State
+  utils
+)
+
 
 ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
 ament_target_dependencies(utils rclcpp tf2_ros tf2_eigen Eigen3 std_msgs tf2_geometry_msgs OpenCV)
 ament_target_dependencies(slung_pose_measurement rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs)
+ament_target_dependencies(logger rclcpp) #std_msgs tf2_geometry_msgs
 
 
 # if(WITH_PLOTS)
@@ -133,6 +143,7 @@ install(TARGETS
   utils
   State
   tester
+  logger
   slung_pose_measurement
   slung_pose_estimation
   DESTINATION lib/${PROJECT_NAME})
