@@ -24,16 +24,29 @@ def read_log_file(filename):
                 distAngGeoLoad.append(float(data[20]))
 
                 # Loop for drone data
+                # Added nested list to store all drones
+                pos_drones_rel_world_desired.append([])
+                rpy_drones_rel_world_desired.append([])
+                pos_drones_rel_world_gt.append([])
+                rpy_drones_rel_world_gt.append([])
+                pos_err_drones.append([])
+                att_err_drones.append([])
+                distTransDrones.append([])
+                distAngGeoDrones.append([])
+                
+
                 for i in range(3): # 3 drones
-                    base_index = 21 + i * 20
-                    pos_drones_rel_world_desired.append([float(data[base_index]), float(data[base_index + 1]), float(data[base_index + 2])])
-                    rpy_drones_rel_world_desired.append([float(data[base_index + 3]), float(data[base_index + 4]), float(data[base_index + 5])])
-                    pos_drones_rel_world_gt.append([float(data[base_index + 6]), float(data[base_index + 7]), float(data[base_index + 8])])
-                    rpy_drones_rel_world_gt.append([float(data[base_index + 9]), float(data[base_index + 10]), float(data[base_index + 11])])
-                    pos_err_drones.append([float(data[base_index + 12]), float(data[base_index + 13]), float(data[base_index + 14])])
-                    att_err_drones.append([float(data[base_index + 15]), float(data[base_index + 16]), float(data[base_index + 17])])
-                    distTransDrones.append(float(data[base_index + 18]))
-                    distAngGeoDrones.append(float(data[base_index + 19]))
+                    base_index = 21
+                    
+                    pos_drones_rel_world_desired[-1].append([float(data[base_index]), float(data[base_index + 1]), float(data[base_index + 2])])
+                    rpy_drones_rel_world_desired[-1].append([float(data[base_index + 3]), float(data[base_index + 4]), float(data[base_index + 5])])
+                    pos_drones_rel_world_gt[-1].append([float(data[base_index + 6]), float(data[base_index + 7]), float(data[base_index + 8])])
+                    rpy_drones_rel_world_gt[-1].append([float(data[base_index + 9]), float(data[base_index + 10]), float(data[base_index + 11])])
+                    pos_err_drones[-1].append([float(data[base_index + 12]), float(data[base_index + 13]), float(data[base_index + 14])])
+                    att_err_drones[-1].append([float(data[base_index + 15]), float(data[base_index + 16]), float(data[base_index + 17])])
+                    distTransDrones[-1].append(float(data[base_index + 18]))
+                    distAngGeoDrones[-1].append(float(data[base_index + 19]))
+                    
 
     # Convert to np
     time = np.array(time)
@@ -46,70 +59,20 @@ def read_log_file(filename):
     distTransLoad = np.array(distTransLoad)
     distAngGeoLoad = np.array(distAngGeoLoad)
 
-    pos_drones_rel_world_desired = np.array(pos_drones_rel_world_desired).reshape(-1, 3)
-    rpy_drones_rel_world_desired = np.array(rpy_drones_rel_world_desired).reshape(-1, 3)
-    pos_drones_rel_world_gt = np.array(pos_drones_rel_world_gt).reshape(-1, 3)
-    rpy_drones_rel_world_gt = np.array(rpy_drones_rel_world_gt).reshape(-1, 3)
-    pos_err_drones = np.array(pos_err_drones).reshape(-1, 3)
-    att_err_drones = np.array(att_err_drones).reshape(-1, 3)
-    distTransDrones = np.array(distTransDrones).reshape(-1, 3)
-    distAngGeoDrones = np.array(distAngGeoDrones).reshape(-1, 3)
+    pos_drones_rel_world_desired = np.array(pos_drones_rel_world_desired) #.reshape(-1, 3, 3) # TODO: Confirm data is resized in correct way
+    rpy_drones_rel_world_desired = np.array(rpy_drones_rel_world_desired) #.reshape(-1, 3, 3)
+    pos_drones_rel_world_gt = np.array(pos_drones_rel_world_gt) #.reshape(-1, 3, 3)
+    rpy_drones_rel_world_gt = np.array(rpy_drones_rel_world_gt) #.reshape(-1, 3, 3)
+    pos_err_drones = np.array(pos_err_drones) #.reshape(-1, 3, 3)
+    att_err_drones = np.array(att_err_drones) #.reshape(-1, 3, 3)
+    distTransDrones = np.array(distTransDrones) #.reshape(-1, 3, 1)
+    distAngGeoDrones = np.array(distAngGeoDrones) #.reshape(-1, 3, 1)
 
     return (time, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_gt, rpy_load_rel_world_gt,
             pos_err_load, att_err_load, distTransLoad, distAngGeoLoad,
             pos_drones_rel_world_desired, rpy_drones_rel_world_desired, pos_drones_rel_world_gt, rpy_drones_rel_world_gt,
             pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones)
 
-# def plot_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_drones_rel_world_gt, rpy_drones_rel_world_gt,
-#               pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_drones_rel_world_desired, rpy_drones_rel_world_desired,
-#               title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
-#     plt.figure(figsize=(15, 15))
-
-#     # Position and Ground Truth Position
-#     plt.subplot(3, 1, 1)
-#     pos_load_rel_world_gt = list(zip(*pos_load_rel_world_gt))
-#     pos_load_rel_world_desired = list(zip(*pos_load_rel_world_desired))
-#     plt.plot(time, pos_load_rel_world_gt[0], label='pos_load_gt_x', color='blue')
-#     plt.plot(time, pos_load_rel_world_gt[1], label='pos_load_gt_y', color='green')
-#     plt.plot(time, pos_load_rel_world_gt[2], label='pos_load_gt_z', color='red')
-#     plt.plot(time, pos_load_rel_world_desired[0], label='pos_load_desired_x', linestyle='dashed', color='blue')
-#     plt.plot(time, pos_load_rel_world_desired[1], label='pos_load_desired_y', linestyle='dashed', color='green')
-#     plt.plot(time, pos_load_rel_world_desired[2], label='pos_load_desired_z', linestyle='dashed', color='red')
-#     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-#     plt.ylabel('Position (m)', fontsize=axes_label_font_size)
-#     plt.title('Load Position - GT vs Desired', fontsize=title_font_size)
-#     plt.legend(fontsize=legend_font_size)
-#     plt.xticks(fontsize=ticks_font_size)
-#     plt.yticks(fontsize=ticks_font_size)
-
-#     # RPY and Ground Truth RPY
-#     plt.subplot(3, 1, 2)
-#     rpy_load_rel_world_gt = np.array(rpy_load_rel_world_gt).T
-#     rpy_load_rel_world_desired = np.array(rpy_load_rel_world_desired).T
-#     for i in range(3):
-#         plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_gt[i]), label=f'rpy_load_gt_{["roll", "pitch", "yaw"][i]}', color=f'C{i}')
-#         plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_desired[i]), label=f'rpy_load_desired_{["roll", "pitch", "yaw"][i]}', linestyle='dashed', color=f'C{i}')
-#     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-#     plt.ylabel('Orientation (Degrees)', fontsize=axes_label_font_size)
-#     plt.title('Load Orientation - GT vs Desired', fontsize=title_font_size)
-#     plt.legend(fontsize=legend_font_size)
-#     plt.xticks(fontsize=ticks_font_size)
-#     plt.yticks(fontsize=ticks_font_size)
-
-#     # Drone Position and Orientation
-#     plt.subplot(3, 1, 3)
-#     pos_drones_rel_world_gt = np.array(pos_drones_rel_world_gt).T
-#     for i in range(3):
-#         plt.plot(time, pos_drones_rel_world_gt[i], label=f'drone_{i+1}_pos_x', linestyle='dashed', color=f'C{i}')
-#     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-#     plt.ylabel('Position (m)', fontsize=axes_label_font_size)
-#     plt.title('Drone Positions Relative to the World', fontsize=title_font_size)
-#     plt.legend(fontsize=legend_font_size)
-#     plt.xticks(fontsize=ticks_font_size)
-#     plt.yticks(fontsize=ticks_font_size)
-
-#     plt.tight_layout()
-#     plt.show()
 
 def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_rel_world_desired, rpy_load_rel_world_desired,
                    title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
@@ -119,12 +82,12 @@ def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_
     plt.subplot(2, 1, 1)
     pos_load_rel_world_gt = list(zip(*pos_load_rel_world_gt))
     pos_load_rel_world_desired = list(zip(*pos_load_rel_world_desired))
-    plt.plot(time, pos_load_rel_world_gt[0], label='pos_load_gt_x', color='blue')
+    plt.plot(time, pos_load_rel_world_gt[0], label='pos_load_gt_x', color='red')
     plt.plot(time, pos_load_rel_world_gt[1], label='pos_load_gt_y', color='green')
-    plt.plot(time, pos_load_rel_world_gt[2], label='pos_load_gt_z', color='red')
-    plt.plot(time, pos_load_rel_world_desired[0], label='pos_load_desired_x', linestyle='dashed', color='blue')
+    plt.plot(time, pos_load_rel_world_gt[2], label='pos_load_gt_z', color='blue')
+    plt.plot(time, pos_load_rel_world_desired[0], label='pos_load_desired_x', linestyle='dashed', color='red')
     plt.plot(time, pos_load_rel_world_desired[1], label='pos_load_desired_y', linestyle='dashed', color='green')
-    plt.plot(time, pos_load_rel_world_desired[2], label='pos_load_desired_z', linestyle='dashed', color='red')
+    plt.plot(time, pos_load_rel_world_desired[2], label='pos_load_desired_z', linestyle='dashed', color='blue')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Position (m)', fontsize=axes_label_font_size)
     plt.title('Load Position - GT vs Desired', fontsize=title_font_size)
@@ -137,8 +100,8 @@ def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_
     rpy_load_rel_world_gt = np.array(rpy_load_rel_world_gt).T
     rpy_load_rel_world_desired = np.array(rpy_load_rel_world_desired).T
     for i in range(3):
-        plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_gt[i]), label=f'rpy_load_gt_{["roll", "pitch", "yaw"][i]}', color=f'C{i}')
-        plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_desired[i]), label=f'rpy_load_desired_{["roll", "pitch", "yaw"][i]}', linestyle='dashed', color=f'C{i}')
+        plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_gt[i]), label=f'rpy_load_gt_{["roll", "pitch", "yaw"][i]}', color=f'{["red", "green", "blue"][i]}')
+        plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_desired[i]), label=f'rpy_load_desired_{["roll", "pitch", "yaw"][i]}', linestyle='dashed', color=f'{["red", "green", "blue"][i]}')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Orientation (Degrees)', fontsize=axes_label_font_size)
     plt.title('Load Orientation - GT vs Desired', fontsize=title_font_size)
@@ -153,11 +116,20 @@ def plot_drones_data(time, pos_drones_rel_world_gt, rpy_drones_rel_world_gt, pos
                      title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
     plt.figure(figsize=(15, 10))
 
-    # Drone Position and Orientation
+    # Drone Position 
     plt.subplot(2, 1, 1)
-    pos_drones_rel_world_gt = np.array(pos_drones_rel_world_gt).T
+    #pos_drones_rel_world_gt = np.array(pos_drones_rel_world_gt).T
     for i in range(3):
-        plt.plot(time, pos_drones_rel_world_gt[i], label=f'drone_{i+1}_pos_x', linestyle='dashed', color=f'C{i}')
+        # Position gt
+        plt.plot(time, [pos_drone_i_fixed_t[i][0] for pos_drone_i_fixed_t in pos_drones_rel_world_gt], label=f'pos_drone_{i+1}_gt_x', color=f'C{3*i}') #TODO: Perhaps not in correct order??
+        plt.plot(time, [pos_drone_i_fixed_t[i][1] for pos_drone_i_fixed_t in pos_drones_rel_world_gt], label=f'pos_drone_{i+1}_gt_y', color=f'C{3*i+1}')
+        plt.plot(time, [pos_drone_i_fixed_t[i][2] for pos_drone_i_fixed_t in pos_drones_rel_world_gt], label=f'pos_drone_{i+1}_gt_z', color=f'C{3*i+2}')
+        
+        # Position desired
+        plt.plot(time, [pos_drone_i_fixed_t[i][0] for pos_drone_i_fixed_t in pos_drones_rel_world_desired], label='_nolegend_', linestyle='dashed', color=f'C{3*i}') #label=f'pos_drone_{i+1}_d_x', linestyle='dashed', color=f'C{i}')
+        plt.plot(time, [pos_drone_i_fixed_t[i][1] for pos_drone_i_fixed_t in pos_drones_rel_world_desired], label='_nolegend_', linestyle='dashed', color=f'C{3*i+1}') #label=f'pos_drone_{i+1}_d_y', linestyle='dashed', color=f'C{i+1}')
+        plt.plot(time, [pos_drone_i_fixed_t[i][2] for pos_drone_i_fixed_t in pos_drones_rel_world_desired], label='_nolegend_', linestyle='dashed', color=f'C{3*i+2}') #label=f'pos_drone_{i+1}_d_z', linestyle='dashed', color=f'C{i+2}')
+    
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Position (m)', fontsize=axes_label_font_size)
     plt.title('Drone Positions Relative to the World', fontsize=title_font_size)
@@ -165,11 +137,21 @@ def plot_drones_data(time, pos_drones_rel_world_gt, rpy_drones_rel_world_gt, pos
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
 
-    # Add similar plots for orientation if needed
+    # Drone orientation
     plt.subplot(2, 1, 2)
-    rpy_drones_rel_world_gt = np.array(rpy_drones_rel_world_gt).T
+    
     for i in range(3):
-        plt.plot(time, unwrap_and_convert_to_degrees(rpy_drones_rel_world_gt[i]), label=f'drone_{i+1}_rpy_{["roll", "pitch", "yaw"][i]}', color=f'C{i}')
+        # Att gt 
+        plt.plot(time, unwrap_and_convert_to_degrees([drone_i_fixed_t[i][0] for drone_i_fixed_t in rpy_drones_rel_world_gt]), label=f'att_drone_{i+1}_gt_r', color=f'C{3*i}') #TODO: Perhaps not in correct order??
+        plt.plot(time, unwrap_and_convert_to_degrees([drone_i_fixed_t[i][1] for drone_i_fixed_t in rpy_drones_rel_world_gt]), label=f'att_drone_{i+1}_gt_p', color=f'C{3*i+1}')
+        plt.plot(time, unwrap_and_convert_to_degrees([drone_i_fixed_t[i][2] for drone_i_fixed_t in rpy_drones_rel_world_gt]), label=f'att_drone_{i+1}_gt_y', color=f'C{3*i+2}')
+        
+        # Att desired
+        plt.plot(time, unwrap_and_convert_to_degrees([drone_i_fixed_t[i][0] for drone_i_fixed_t in rpy_drones_rel_world_desired]), label='_nolegend_', linestyle='dashed', color=f'C{3*i}') #label=f'att_drone_{i+1}_d_r', linestyle='dashed', color=f'C{i}')
+        plt.plot(time, unwrap_and_convert_to_degrees([drone_i_fixed_t[i][1] for drone_i_fixed_t in rpy_drones_rel_world_desired]), label='_nolegend_', linestyle='dashed', color=f'C{3*i+1}') #label=f'att_drone_{i+1}_d_p', linestyle='dashed', color=f'C{i+1}')
+        plt.plot(time, unwrap_and_convert_to_degrees([drone_i_fixed_t[i][2] for drone_i_fixed_t in rpy_drones_rel_world_desired]), label='_nolegend_', linestyle='dashed', color=f'C{3*i+2}') #label=f'att_drone_{i+1}_d_y', linestyle='dashed', color=f'C{i+2}')
+    
+
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Orientation (Degrees)', fontsize=axes_label_font_size)
     plt.title('Drone Orientations Relative to the World', fontsize=title_font_size)
@@ -187,9 +169,9 @@ def plot_errors(time, pos_err_load, att_err_load, pos_err_drones, att_err_drones
     # Load Position Errors
     plt.subplot(2, 1, 1)
     pos_err_load = list(zip(*pos_err_load))
-    plt.plot(time, pos_err_load[0], label='pos_err_load_x', color='blue')
+    plt.plot(time, pos_err_load[0], label='pos_err_load_x', color='red')
     plt.plot(time, pos_err_load[1], label='pos_err_load_y', color='green')
-    plt.plot(time, pos_err_load[2], label='pos_err_load_z', color='red')
+    plt.plot(time, pos_err_load[2], label='pos_err_load_z', color='blu')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Position Error (m)', fontsize=axes_label_font_size)
     plt.title('Load Position Error', fontsize=title_font_size)
@@ -200,9 +182,9 @@ def plot_errors(time, pos_err_load, att_err_load, pos_err_drones, att_err_drones
     # Load Attitude Errors
     plt.subplot(2, 1, 2)
     att_err_load = list(zip(*att_err_load))
-    plt.plot(time, unwrap_and_convert_to_degrees(att_err_load[0]), label='att_err_load_roll', color='blue')
+    plt.plot(time, unwrap_and_convert_to_degrees(att_err_load[0]), label='att_err_load_roll', color='red')
     plt.plot(time, unwrap_and_convert_to_degrees(att_err_load[1]), label='att_err_load_pitch', color='green')
-    plt.plot(time, unwrap_and_convert_to_degrees(att_err_load[2]), label='att_err_load_yaw', color='red')
+    plt.plot(time, unwrap_and_convert_to_degrees(att_err_load[2]), label='att_err_load_yaw', color='blue')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Attitude Error (Degrees)', fontsize=axes_label_font_size)
     plt.title('Load Attitude Error', fontsize=title_font_size)
@@ -244,8 +226,8 @@ def plot_trans_geo(time, distTransLoad, distAngGeoLoad, distTransDrones, distAng
     plt.tight_layout()
     plt.show()
 
-def unwrap_and_convert_to_degrees(data):
-    data_unwrapped = np.unwrap(np.radians(data)) # Unwrap phases in radians
+def unwrap_and_convert_to_degrees(data): 
+    data_unwrapped = np.unwrap(data) # Unwrap phases in radians np.radians(data)
     return np.degrees(data_unwrapped) # Convert radians to degrees
 
 def main():
@@ -260,15 +242,12 @@ def main():
     pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones) = read_log_file(filename)
 
     # Plot settings
-    title_font_size = 14
-    axes_label_font_size = 12
-    legend_font_size = 10
-    ticks_font_size = 10
+    title_font_size = 18 #14
+    axes_label_font_size = 18 #12
+    legend_font_size = 14 #10
+    ticks_font_size = 18 #10
 
     # Plot Data
-    # plot_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_drones_rel_world_gt, rpy_drones_rel_world_gt,
-    #         pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_drones_rel_world_desired, rpy_drones_rel_world_desired,
-    #         title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
     # Plot load data
     plot_load_data(
