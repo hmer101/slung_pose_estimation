@@ -31,6 +31,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(kalmanif REQUIRED)
+find_package(multi_drone_slung_load_interfaces REQUIRED)
 
 # Include directories
 include_directories(
@@ -110,13 +111,14 @@ target_link_libraries(State
 target_link_libraries(logger
   State
   utils
+  #multi_drone_slung_load_interfaces
 )
 
 
 ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
 ament_target_dependencies(utils rclcpp tf2_ros tf2_eigen Eigen3 std_msgs tf2_geometry_msgs OpenCV)
 ament_target_dependencies(slung_pose_measurement rclcpp std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs)
-ament_target_dependencies(logger rclcpp) #std_msgs tf2_geometry_msgs
+ament_target_dependencies(logger rclcpp multi_drone_slung_load_interfaces) #std_msgs tf2_geometry_msgs
 
 
 # if(WITH_PLOTS)

@@ -7,6 +7,8 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 
+#include "multi_drone_slung_load_interfaces/msg/phase.hpp"
+
 #include "std_msgs/msg/string.hpp"
 
 #include "slung_pose_estimation/State.h"
@@ -22,7 +24,7 @@ private:
     std::string ns_; // Namespace of the node
     int id_; // ID of the drone this node is running on
     int num_drones_;
-    int first_drone_num;
+    int first_drone_num_;
 
     std::string env_;
     rclcpp::Time start_time_;
@@ -37,12 +39,17 @@ private:
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
     std::string logging_file_path_;
-    
+
+    std::vector<multi_drone_slung_load_interfaces::msg::Phase> drone_phases_;
+    bool flag_in_mission_phase_;
+
     // SUBSCRIBERS
+    std::vector<rclcpp::Subscription<multi_drone_slung_load_interfaces::msg::Phase>::SharedPtr> sub_phase_drones_;
 
     // PUBLISHERS
 
     // CALLBACKS
+    void clbk_update_drone_phase(const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg, const int drone_index);
     void clbk_timer();
 
     // HELPERS

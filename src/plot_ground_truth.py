@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import math
 import numpy as np
 
@@ -90,7 +91,7 @@ def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_
     plt.plot(time, pos_load_rel_world_desired[2], label='pos_load_desired_z', linestyle='dashed', color='blue')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Position (m)', fontsize=axes_label_font_size)
-    plt.title('Load Position - GT vs Desired', fontsize=title_font_size)
+    plt.title('Load Position - Ground Truth vs Desired', fontsize=title_font_size)
     plt.legend(fontsize=legend_font_size)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
@@ -104,7 +105,7 @@ def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_
         plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_desired[i]), label=f'rpy_load_desired_{["roll", "pitch", "yaw"][i]}', linestyle='dashed', color=f'{["red", "green", "blue"][i]}')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Orientation (Degrees)', fontsize=axes_label_font_size)
-    plt.title('Load Orientation - GT vs Desired', fontsize=title_font_size)
+    plt.title('Load Orientation - Ground Truth vs Desired', fontsize=title_font_size)
     plt.legend(fontsize=legend_font_size)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
@@ -226,6 +227,39 @@ def plot_trans_geo(time, distTransLoad, distAngGeoLoad, distTransDrones, distAng
     plt.tight_layout()
     plt.show()
 
+
+def plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired,
+                                          pos_drones_rel_world_gt, pos_drones_rel_world_desired,
+                                          title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
+    fig = plt.figure(figsize=(18, 12))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    ax.set_title('Trajectories of Load and Drones', fontsize=title_font_size)
+    ax.set_xlabel('X (m)', fontsize=axes_label_font_size)
+    ax.set_ylabel('Y (m)', fontsize=axes_label_font_size)
+    ax.set_zlabel('Z (m)', fontsize=axes_label_font_size)
+    
+    # Plot Load Trajectories
+    ax.plot(pos_load_rel_world_gt[:, 0], pos_load_rel_world_gt[:, 1], pos_load_rel_world_gt[:, 2],
+            label='Load ground truth', color='r')
+    ax.plot(pos_load_rel_world_desired[:, 0], pos_load_rel_world_desired[:, 1], pos_load_rel_world_desired[:, 2],
+            label='Load desired', color='r', linestyle='dashed')
+
+    # Plot Drone Trajectories
+    colors = ['green', 'blue', 'purple']
+    for i in range(3):
+        ax.plot(pos_drones_rel_world_gt[:, i, 0], pos_drones_rel_world_gt[:, i, 1], pos_drones_rel_world_gt[:, i, 2],
+                label=f'Drone {i+1} ground truth', color=colors[i])
+        ax.plot(pos_drones_rel_world_desired[:, i, 0], pos_drones_rel_world_desired[:, i, 1], pos_drones_rel_world_desired[:, i, 2],
+                label=f'Drone {i+1} desired', color=colors[i], linestyle='dashed')
+
+    ax.legend(fontsize=legend_font_size)
+    
+    plt.tight_layout()
+    plt.show()
+
+
+
 def unwrap_and_convert_to_degrees(data): 
     data_unwrapped = np.unwrap(data) # Unwrap phases in radians np.radians(data)
     return np.degrees(data_unwrapped) # Convert radians to degrees
@@ -250,34 +284,38 @@ def main():
     # Plot Data
 
     # Plot load data
-    plot_load_data(
-        time, 
-        pos_load_rel_world_gt, 
-        rpy_load_rel_world_gt, 
-        pos_load_rel_world_desired, 
-        rpy_load_rel_world_desired,
-        title_font_size=title_font_size, 
-        axes_label_font_size=axes_label_font_size, 
-        legend_font_size=legend_font_size, 
-        ticks_font_size=ticks_font_size
-    )
+    # plot_load_data(
+    #     time, 
+    #     pos_load_rel_world_gt, 
+    #     rpy_load_rel_world_gt, 
+    #     pos_load_rel_world_desired, 
+    #     rpy_load_rel_world_desired,
+    #     title_font_size=title_font_size, 
+    #     axes_label_font_size=axes_label_font_size, 
+    #     legend_font_size=legend_font_size, 
+    #     ticks_font_size=ticks_font_size
+    # )
 
     # Plot drones data
-    plot_drones_data(
-        time, 
-        pos_drones_rel_world_gt, 
-        rpy_drones_rel_world_gt, 
-        pos_drones_rel_world_desired, 
-        rpy_drones_rel_world_desired,
-        title_font_size=title_font_size, 
-        axes_label_font_size=axes_label_font_size, 
-        legend_font_size=legend_font_size, 
-        ticks_font_size=ticks_font_size
-    )
+    # plot_drones_data(
+    #     time, 
+    #     pos_drones_rel_world_gt, 
+    #     rpy_drones_rel_world_gt, 
+    #     pos_drones_rel_world_desired, 
+    #     rpy_drones_rel_world_desired,
+    #     title_font_size=title_font_size, 
+    #     axes_label_font_size=axes_label_font_size, 
+    #     legend_font_size=legend_font_size, 
+    #     ticks_font_size=ticks_font_size
+    # )
 
     # Plot Errors
     # plot_errors(time, pos_err_load, att_err_load, pos_err_drones, att_err_drones,
                 # title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+
+    plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired,
+                                        pos_drones_rel_world_gt, pos_drones_rel_world_desired,
+                                        title_font_size=16, axes_label_font_size=12, legend_font_size=10, ticks_font_size=8)
     
 
 if __name__ == '__main__':
