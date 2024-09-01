@@ -49,6 +49,7 @@ Logger::Logger() : Node("logger", rclcpp::NodeOptions().use_global_arguments(tru
     this->tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*(this->tf_buffer_));
 
     this->drone_phases_.resize(this->num_drones_);
+    this->sub_phase_drones_.resize(this->num_drones_);
     this->flag_in_mission_phase_ = false;
 
     // ROS2
@@ -64,8 +65,8 @@ Logger::Logger() : Node("logger", rclcpp::NodeOptions().use_global_arguments(tru
         this->sub_phase_drones_[drone_index] = this->create_subscription<multi_drone_slung_load_interfaces::msg::Phase>(
             topic_name,
             qos_profile_drone_system_,
-            [this, i](const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg) {
-                this->clbk_update_drone_phase(msg, i);
+            [this, drone_index](const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg) {
+                this->clbk_update_drone_phase(msg, drone_index);
             }
         );
     }
@@ -134,19 +135,18 @@ void Logger::clbk_timer(){
         this->states_drones_rel_world_desired[i-this->first_drone_num_] = state_drone_rel_world_desired; 
     }
     
-    // DATA DIVIDERS
+    // DATA DIVIDERS   
     bool drones_in_mission_phase = std::all_of(this->drone_phases_.begin(), this->drone_phases_.end(), [](const multi_drone_slung_load_interfaces::msg::Phase& phase_msg) {
         return phase_msg.phase == multi_drone_slung_load_interfaces::msg::Phase::PHASE_MISSION_START; 
     });
 
     // Add a blank line at the start and end of the mission phase
-    if((drones_in_mission_phase && !this->flag_in_mission_phase_) || (!drones_in_mission_phase && this->flag_in_mission_phase_)){
+    if((drones_in_mission_phase && !this->flag_in_mission_phase_) || (!drones_in_mission_phase && this->flag_in_mission_phase_)){       
         std::ofstream logFile;
         logFile.open(this->logging_file_path_, std::ios::app);
 
         if (logFile.is_open()) {
             // Log load poses
-            logFile << std::endl;
             logFile << std::endl;
         }
 
@@ -178,10 +178,7 @@ void Logger::log_gt_poses(const std::string &filename, const droneState::State& 
     float distTransLoad = state_load_rel_world_gt.distTrans(state_load_rel_world_desired);
     float distAngGeoLoad = state_load_rel_world_gt.distAngGeo(state_load_rel_world_desired)*180.0 / M_PI;
     
-    if (logFile.is_open()) {
-        // Add linebreak at start and end of 'mission' phase 
-        //logFile << std::endl;
-        
+    if (logFile.is_open()) {       
         // Log load poses
         logFile << time << " "
                 << pos_load_rel_world_desired.x() << " " << pos_load_rel_world_desired.y() << " " << pos_load_rel_world_desired.z() << " "

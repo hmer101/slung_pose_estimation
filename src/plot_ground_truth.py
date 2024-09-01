@@ -3,15 +3,29 @@ from mpl_toolkits.mplot3d import Axes3D
 import math
 import numpy as np
 
-def read_log_file(filename):
+def read_log_file(filename, only_read_mission=False):
     time, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_gt, rpy_load_rel_world_gt = [], [], [], [], []
     pos_err_load, att_err_load, distTransLoad, distAngGeoLoad = [], [], [], []
     pos_drones_rel_world_desired, rpy_drones_rel_world_desired = [], []
     pos_drones_rel_world_gt, rpy_drones_rel_world_gt = [], []
     pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones = [], [], [], []
+    
+    # State variables
+    in_mission_block = False
 
     with open(filename, 'r') as file:
         for line in file:
+            line = line.strip()
+            
+            # Check for blank line to toggle the in_mission_block state
+            if not line:
+                in_mission_block = not in_mission_block
+                continue  # Skip the blank line
+
+            # Only process lines if we're in the mission block
+            if only_read_mission and not in_mission_block:
+                continue
+            
             data = line.split()
             if len(data) == 81: # Adjusted length check for 3 drones
                 time.append(float(data[0]))
@@ -37,7 +51,7 @@ def read_log_file(filename):
                 
 
                 for i in range(3): # 3 drones
-                    base_index = 21
+                    base_index = 21 + 20*i
                     
                     pos_drones_rel_world_desired[-1].append([float(data[base_index]), float(data[base_index + 1]), float(data[base_index + 2])])
                     rpy_drones_rel_world_desired[-1].append([float(data[base_index + 3]), float(data[base_index + 4]), float(data[base_index + 5])])
@@ -240,7 +254,7 @@ def plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired
     ax.set_zlabel('Z (m)', fontsize=axes_label_font_size)
     
     # Plot Load Trajectories
-    ax.plot(pos_load_rel_world_gt[:, 0], pos_load_rel_world_gt[:, 1], pos_load_rel_world_gt[:, 2],
+    ax.plot(pos_load_rel_world_gt[:, 0], pos_load_rel_world_gt[:, 1], pos_load_rel_world_gt[:, 2], #pos_load_rel_world_gt[:, 0], pos_load_rel_world_gt[:, 1], pos_load_rel_world_gt[:, 2],
             label='Load ground truth', color='r')
     ax.plot(pos_load_rel_world_desired[:, 0], pos_load_rel_world_desired[:, 1], pos_load_rel_world_desired[:, 2],
             label='Load desired', color='r', linestyle='dashed')
@@ -252,6 +266,7 @@ def plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired
                 label=f'Drone {i+1} ground truth', color=colors[i])
         ax.plot(pos_drones_rel_world_desired[:, i, 0], pos_drones_rel_world_desired[:, i, 1], pos_drones_rel_world_desired[:, i, 2],
                 label=f'Drone {i+1} desired', color=colors[i], linestyle='dashed')
+        #plt.show()
 
     ax.legend(fontsize=legend_font_size)
     
@@ -268,12 +283,14 @@ def main():
     # Read data
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + '2024_08_29_17_04_40_logger1.txt' # replace with your log file path
+    filename = path + '2024_09_01_19_05_36_logger1.txt' # replace with your log file path
+    only_plot_mission_phase = True
+
 
     (time, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_gt, rpy_load_rel_world_gt,
     pos_err_load, att_err_load, distTransLoad, distAngGeoLoad,
     pos_drones_rel_world_desired, rpy_drones_rel_world_desired, pos_drones_rel_world_gt, rpy_drones_rel_world_gt,
-    pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones) = read_log_file(filename)
+    pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones) = read_log_file(filename, only_read_mission=only_plot_mission_phase)
 
     # Plot settings
     title_font_size = 18 #14
