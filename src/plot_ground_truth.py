@@ -283,8 +283,8 @@ def main():
     # Read data
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + '2024_09_01_19_05_36_logger1.txt' # replace with your log file path
-    only_plot_mission_phase = True
+    filename = path + '2024_09_02_14_55_56_logger1.txt' #'2024_09_02_12_57_29_logger1.txt' #'2024_09_02_12_39_56_logger1.txt' # replace with your log file path
+    only_plot_mission_phase = False #True
 
 
     (time, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_gt, rpy_load_rel_world_gt,
