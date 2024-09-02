@@ -6,6 +6,10 @@ import numpy as np
 def read_log_file(filename, only_read_mission=False):
     time, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_gt, rpy_load_rel_world_gt = [], [], [], [], []
     pos_err_load, att_err_load, distTransLoad, distAngGeoLoad = [], [], [], []
+    
+    pos_load_rel_world_qs, rpy_load_rel_world_qs = [], []
+    qs_pos_diff_load, qs_att_diff_load, distTransLoadQs, distAngGeoLoadQs = [], [], [], []  
+    
     pos_drones_rel_world_desired, rpy_drones_rel_world_desired = [], []
     pos_drones_rel_world_gt, rpy_drones_rel_world_gt = [], []
     pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones = [], [], [], []
@@ -27,7 +31,7 @@ def read_log_file(filename, only_read_mission=False):
                 continue
             
             data = line.split()
-            if len(data) == 81: # Adjusted length check for 3 drones
+            if len(data) == 95: # Adjusted length check for 3 drones
                 time.append(float(data[0]))
                 pos_load_rel_world_desired.append([float(data[1]), float(data[2]), float(data[3])])
                 rpy_load_rel_world_desired.append([float(data[4]), float(data[5]), float(data[6])])
@@ -37,6 +41,14 @@ def read_log_file(filename, only_read_mission=False):
                 att_err_load.append([float(data[16]), float(data[17]), float(data[18])])
                 distTransLoad.append(float(data[19]))
                 distAngGeoLoad.append(float(data[20]))
+
+                # Quasi-static load pose data
+                pos_load_rel_world_qs.append([float(data[21]), float(data[22]), float(data[23])])
+                rpy_load_rel_world_qs.append([float(data[24]), float(data[25]), float(data[26])])
+                qs_pos_diff_load.append([float(data[27]), float(data[28]), float(data[29])])
+                qs_att_diff_load.append([float(data[30]), float(data[31]), float(data[32])])
+                distTransLoadQs.append(float(data[33]))
+                distAngGeoLoadQs.append(float(data[34]))
 
                 # Loop for drone data
                 # Added nested list to store all drones
@@ -51,7 +63,7 @@ def read_log_file(filename, only_read_mission=False):
                 
 
                 for i in range(3): # 3 drones
-                    base_index = 21 + 20*i
+                    base_index = 35 + 20*i
                     
                     pos_drones_rel_world_desired[-1].append([float(data[base_index]), float(data[base_index + 1]), float(data[base_index + 2])])
                     rpy_drones_rel_world_desired[-1].append([float(data[base_index + 3]), float(data[base_index + 4]), float(data[base_index + 5])])
@@ -74,6 +86,13 @@ def read_log_file(filename, only_read_mission=False):
     distTransLoad = np.array(distTransLoad)
     distAngGeoLoad = np.array(distAngGeoLoad)
 
+    pos_load_rel_world_qs = np.array(pos_load_rel_world_qs)
+    rpy_load_rel_world_qs = np.array(rpy_load_rel_world_qs)
+    qs_pos_diff_load = np.array(qs_pos_diff_load)
+    qs_att_diff_load = np.array(qs_att_diff_load)
+    distTransLoadQs = np.array(distTransLoadQs)
+    distAngGeoLoadQs = np.array(distAngGeoLoadQs)
+
     pos_drones_rel_world_desired = np.array(pos_drones_rel_world_desired) #.reshape(-1, 3, 3) # TODO: Confirm data is resized in correct way
     rpy_drones_rel_world_desired = np.array(rpy_drones_rel_world_desired) #.reshape(-1, 3, 3)
     pos_drones_rel_world_gt = np.array(pos_drones_rel_world_gt) #.reshape(-1, 3, 3)
@@ -85,11 +104,12 @@ def read_log_file(filename, only_read_mission=False):
 
     return (time, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_gt, rpy_load_rel_world_gt,
             pos_err_load, att_err_load, distTransLoad, distAngGeoLoad,
+            pos_load_rel_world_qs, rpy_load_rel_world_qs, qs_pos_diff_load, qs_att_diff_load, distTransLoadQs, distAngGeoLoadQs,
             pos_drones_rel_world_desired, rpy_drones_rel_world_desired, pos_drones_rel_world_gt, rpy_drones_rel_world_gt,
             pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones)
 
 
-def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_rel_world_desired, rpy_load_rel_world_desired,
+def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_qs, rpy_load_rel_world_qs,
                    title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
     plt.figure(figsize=(15, 10))
 
@@ -100,9 +120,15 @@ def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_
     plt.plot(time, pos_load_rel_world_gt[0], label='pos_load_gt_x', color='red')
     plt.plot(time, pos_load_rel_world_gt[1], label='pos_load_gt_y', color='green')
     plt.plot(time, pos_load_rel_world_gt[2], label='pos_load_gt_z', color='blue')
+
     plt.plot(time, pos_load_rel_world_desired[0], label='pos_load_desired_x', linestyle='dashed', color='red')
     plt.plot(time, pos_load_rel_world_desired[1], label='pos_load_desired_y', linestyle='dashed', color='green')
     plt.plot(time, pos_load_rel_world_desired[2], label='pos_load_desired_z', linestyle='dashed', color='blue')
+
+    plt.plot(time, pos_load_rel_world_qs[0], label='pos_load_quasi-static_x', linestyle='dotted', color='red')
+    plt.plot(time, pos_load_rel_world_qs[1], label='pos_load_quasi-static_y', linestyle='dotted', color='green')
+    plt.plot(time, pos_load_rel_world_qs[2], label='pos_load_quasi-static_z', linestyle='dotted', color='blue')
+
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Position (m)', fontsize=axes_label_font_size)
     plt.title('Load Position - Ground Truth vs Desired', fontsize=title_font_size)
@@ -117,6 +143,7 @@ def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_
     for i in range(3):
         plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_gt[i]), label=f'rpy_load_gt_{["roll", "pitch", "yaw"][i]}', color=f'{["red", "green", "blue"][i]}')
         plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_desired[i]), label=f'rpy_load_desired_{["roll", "pitch", "yaw"][i]}', linestyle='dashed', color=f'{["red", "green", "blue"][i]}')
+        plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_qs[i]), label=f'rpy_load_quasi-static_{["roll", "pitch", "yaw"][i]}', linestyle='dotted', color=f'{["red", "green", "blue"][i]}')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Orientation (Degrees)', fontsize=axes_label_font_size)
     plt.title('Load Orientation - Ground Truth vs Desired', fontsize=title_font_size)
@@ -242,7 +269,7 @@ def plot_trans_geo(time, distTransLoad, distAngGeoLoad, distTransDrones, distAng
     plt.show()
 
 
-def plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired,
+def plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired, pos_load_rel_world_qs,
                                           pos_drones_rel_world_gt, pos_drones_rel_world_desired,
                                           title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
     fig = plt.figure(figsize=(18, 12))
@@ -258,6 +285,8 @@ def plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired
             label='Load ground truth', color='r')
     ax.plot(pos_load_rel_world_desired[:, 0], pos_load_rel_world_desired[:, 1], pos_load_rel_world_desired[:, 2],
             label='Load desired', color='r', linestyle='dashed')
+    ax.plot(pos_load_rel_world_qs[:, 0], pos_load_rel_world_qs[:, 1], pos_load_rel_world_qs[:, 2],
+            label='Load quasi-static', color='r', linestyle='dotted')
 
     # Plot Drone Trajectories
     colors = ['green', 'blue', 'purple']
@@ -266,7 +295,6 @@ def plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired
                 label=f'Drone {i+1} ground truth', color=colors[i])
         ax.plot(pos_drones_rel_world_desired[:, i, 0], pos_drones_rel_world_desired[:, i, 1], pos_drones_rel_world_desired[:, i, 2],
                 label=f'Drone {i+1} desired', color=colors[i], linestyle='dashed')
-        #plt.show()
 
     ax.legend(fontsize=legend_font_size)
     
@@ -289,6 +317,7 @@ def main():
 
     (time, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_gt, rpy_load_rel_world_gt,
     pos_err_load, att_err_load, distTransLoad, distAngGeoLoad,
+    pos_load_rel_world_qs, rpy_load_rel_world_qs, qs_pos_diff_load, qs_att_diff_load, distTransLoadQs, distAngGeoLoadQs,
     pos_drones_rel_world_desired, rpy_drones_rel_world_desired, pos_drones_rel_world_gt, rpy_drones_rel_world_gt,
     pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones) = read_log_file(filename, only_read_mission=only_plot_mission_phase)
 
@@ -301,17 +330,17 @@ def main():
     # Plot Data
 
     # Plot load data
-    # plot_load_data(
-    #     time, 
-    #     pos_load_rel_world_gt, 
-    #     rpy_load_rel_world_gt, 
-    #     pos_load_rel_world_desired, 
-    #     rpy_load_rel_world_desired,
-    #     title_font_size=title_font_size, 
-    #     axes_label_font_size=axes_label_font_size, 
-    #     legend_font_size=legend_font_size, 
-    #     ticks_font_size=ticks_font_size
-    # )
+    plot_load_data(
+        time, 
+        pos_load_rel_world_gt, 
+        rpy_load_rel_world_gt, 
+        pos_load_rel_world_desired, 
+        rpy_load_rel_world_desired,
+        title_font_size=title_font_size, 
+        axes_label_font_size=axes_label_font_size, 
+        legend_font_size=legend_font_size, 
+        ticks_font_size=ticks_font_size
+    )
 
     # Plot drones data
     # plot_drones_data(
@@ -330,7 +359,7 @@ def main():
     # plot_errors(time, pos_err_load, att_err_load, pos_err_drones, att_err_drones,
                 # title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
-    plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired,
+    plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired, pos_load_rel_world_qs,
                                         pos_drones_rel_world_gt, pos_drones_rel_world_desired,
                                         title_font_size=16, axes_label_font_size=12, legend_font_size=10, ticks_font_size=8)
     

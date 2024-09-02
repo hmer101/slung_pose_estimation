@@ -91,7 +91,8 @@ void Logger::clbk_timer(){
     // Get pose
     auto load_rel_world_gt = utils::lookup_tf("world","load" + std::to_string(this->id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
     auto load_rel_world_desired = utils::lookup_tf("world","load" + std::to_string(this->id_) + "_d", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
-
+    auto load_rel_world_qs = utils::lookup_tf("world","load" + std::to_string(this->id_) + "_qs", *this->tf_buffer_, rclcpp::Time(0), this->get_logger()); // Quasi-static load pose
+    
     // Check if the load poses are available, skip logging if not
     if(!load_rel_world_gt || !load_rel_world_desired){
         RCLCPP_WARN(this->get_logger(), "Load pose ground truth or desired not yet available. Skipping logging.");
@@ -106,6 +107,16 @@ void Logger::clbk_timer(){
     droneState::State state_load_rel_world_desired = droneState::State("load" + std::to_string(this->id_) + "_d", droneState::CS_type::ENU);
     state_load_rel_world_desired.setPos(Eigen::Vector3d(load_rel_world_desired->transform.translation.x, load_rel_world_desired->transform.translation.y, load_rel_world_desired->transform.translation.z));
     state_load_rel_world_desired.setAtt(tf2::Quaternion(load_rel_world_desired->transform.rotation.x, load_rel_world_desired->transform.rotation.y, load_rel_world_desired->transform.rotation.z, load_rel_world_desired->transform.rotation.w));
+
+    // Only use quasi-static load pose if it is available
+    droneState::State state_load_rel_world_qs = droneState::State("EMPTY", droneState::CS_type::ENU);
+    
+    if(load_rel_world_qs){
+        state_load_rel_world_qs = droneState::State("load" + std::to_string(this->id_) + "_qs", droneState::CS_type::ENU);
+        state_load_rel_world_qs.setPos(Eigen::Vector3d(load_rel_world_qs->transform.translation.x, load_rel_world_qs->transform.translation.y, load_rel_world_qs->transform.translation.z));
+        state_load_rel_world_qs.setAtt(tf2::Quaternion(load_rel_world_qs->transform.rotation.x, load_rel_world_qs->transform.rotation.y, load_rel_world_qs->transform.rotation.z, load_rel_world_qs->transform.rotation.w));
+    }
+
 
     // DRONES
     // Loop through each drone's desired and ground truth states and log their poses
@@ -154,10 +165,10 @@ void Logger::clbk_timer(){
     }
 
     // Log the ground truth poses
-    this->log_gt_poses(this->logging_file_path_, state_load_rel_world_gt, state_load_rel_world_desired, this->states_drones_rel_world_gt, this->states_drones_rel_world_desired);
+    this->log_poses(this->logging_file_path_, state_load_rel_world_gt, state_load_rel_world_desired, state_load_rel_world_qs, this->states_drones_rel_world_gt, this->states_drones_rel_world_desired);
 }
 
-void Logger::log_gt_poses(const std::string &filename, const droneState::State& state_load_rel_world_gt, const droneState::State& state_load_rel_world_desired, const std::vector<droneState::State>& states_drones_rel_world_gt, const std::vector<droneState::State>& states_drones_rel_world_desired){
+void Logger::log_poses(const std::string &filename, const droneState::State& state_load_rel_world_gt, const droneState::State& state_load_rel_world_desired, const droneState::State& state_load_rel_world_qs, const std::vector<droneState::State>& states_drones_rel_world_gt, const std::vector<droneState::State>& states_drones_rel_world_desired){
     std::ofstream logFile;
     logFile.open(filename, std::ios::app); // Open in append mode
 
@@ -170,13 +181,23 @@ void Logger::log_gt_poses(const std::string &filename, const droneState::State& 
 
     Eigen::Vector3d rpy_load_rel_world_desired = state_load_rel_world_desired.getAttYPR();
     Eigen::Vector3d rpy_load_rel_world_gt = state_load_rel_world_gt.getAttYPR();
+
+    Eigen::Vector3d pos_load_rel_world_qs = state_load_rel_world_qs.getPos();
+    Eigen::Vector3d rpy_load_rel_world_qs = state_load_rel_world_qs.getAttYPR();
     
-    // Calculate load pose errors
+    // Calculate load pose errors from desired
     Eigen::Vector3d pos_err_load = pos_load_rel_world_gt - pos_load_rel_world_desired;
     Eigen::Vector3d att_err_load = rpy_load_rel_world_gt - rpy_load_rel_world_desired;
 
     float distTransLoad = state_load_rel_world_gt.distTrans(state_load_rel_world_desired);
     float distAngGeoLoad = state_load_rel_world_gt.distAngGeo(state_load_rel_world_desired)*180.0 / M_PI;
+
+    // Calculate load pose differences to quasi static
+    Eigen::Vector3d qs_pos_diff_load = pos_load_rel_world_gt - pos_load_rel_world_qs;
+    Eigen::Vector3d qs_att_diff_load = rpy_load_rel_world_gt - rpy_load_rel_world_qs;
+
+    float distTransLoadQs = state_load_rel_world_gt.distTrans(state_load_rel_world_qs);
+    float distAngGeoLoadQs = state_load_rel_world_gt.distAngGeo(state_load_rel_world_qs)*180.0 / M_PI;
     
     if (logFile.is_open()) {       
         // Log load poses
@@ -189,6 +210,12 @@ void Logger::log_gt_poses(const std::string &filename, const droneState::State& 
                 << att_err_load.x() << " " << att_err_load.y() << " " << att_err_load.z() << " "
                 << distTransLoad << " " << distAngGeoLoad << " ";
 
+        // Log quasi-static load poses (note that an empty pose will be logged if qs was not published)
+        logFile << pos_load_rel_world_qs.x() << " " << pos_load_rel_world_qs.y() << " " << pos_load_rel_world_qs.z() << " "
+                << rpy_load_rel_world_qs.x() << " " << rpy_load_rel_world_qs.y() << " " << rpy_load_rel_world_qs.z() << " "
+                << qs_pos_diff_load.x() << " " << qs_pos_diff_load.y() << " " << qs_pos_diff_load.z() << " "
+                << qs_att_diff_load.x() << " " << qs_att_diff_load.y() << " " << qs_att_diff_load.z() << " "
+                << distTransLoadQs << " " << distAngGeoLoadQs << " ";
 
         // Loop through each drone's desired and ground truth states and log their poses
         for (int i = 0; i < this->num_drones_; ++i) // for (auto it = states_drones_rel_world.begin(); it != end; ++it) //for (const auto &drone_rel_world : states_drones_rel_world)

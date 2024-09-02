@@ -53,7 +53,7 @@ private:
     void clbk_timer();
 
     // HELPERS
-    void log_gt_poses(const std::string &filename, const droneState::State &state_load_rel_world_gt, const droneState::State &state_load_rel_world_desired, const std::vector<droneState::State> &states_drones_rel_world_gt, const std::vector<droneState::State> &states_drones_rel_world_desired);
+    void log_poses(const std::string &filename, const droneState::State &state_load_rel_world_gt, const droneState::State &state_load_rel_world_desired, const droneState::State& state_load_rel_world_qs, const std::vector<droneState::State> &states_drones_rel_world_gt, const std::vector<droneState::State> &states_drones_rel_world_desired);
 };
 
 #endif // LOGGER_H
