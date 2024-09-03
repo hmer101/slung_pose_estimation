@@ -259,6 +259,7 @@ void SlungPoseMeasurement::evaluate_pose_measurement(){
     auto marker_gt_rel_cam_gt = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt","load_marker" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
     auto drone_rel_world_gt = utils::lookup_tf("world","drone" + std::to_string(this->drone_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
     auto load_rel_world_gt = utils::lookup_tf("world","load" + std::to_string(this->load_id_) + "_gt", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
+    auto marker_gt_rel_cam_qs = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt","load_marker" + std::to_string(this->load_id_) + "_qs", *this->tf_buffer_, rclcpp::Time(0), this->get_logger()); // Quasi-static load pose
 
     if (marker_gt_rel_cam_gt && drone_rel_world_gt && load_rel_world_gt) { // && (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1))) {
         // Store drone and load gt states for reference
@@ -270,13 +271,23 @@ void SlungPoseMeasurement::evaluate_pose_measurement(){
         state_load_rel_world.setPos(Eigen::Vector3d(load_rel_world_gt->transform.translation.x, load_rel_world_gt->transform.translation.y, load_rel_world_gt->transform.translation.z));
         state_load_rel_world.setAtt(tf2::Quaternion(load_rel_world_gt->transform.rotation.x, load_rel_world_gt->transform.rotation.y, load_rel_world_gt->transform.rotation.z, load_rel_world_gt->transform.rotation.w));
 
+        // Only use quasi-static load pose if it is available
+        droneState::State state_marker_rel_cam_qs = droneState::State("EMPTY", droneState::CS_type::XYZ);
+        
+        if(marker_gt_rel_cam_qs){
+            state_marker_rel_cam_qs = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::ENU);
+            state_marker_rel_cam_qs.setPos(Eigen::Vector3d(marker_gt_rel_cam_qs->transform.translation.x, marker_gt_rel_cam_qs->transform.translation.y, marker_gt_rel_cam_qs->transform.translation.z));
+            state_marker_rel_cam_qs.setAtt(tf2::Quaternion(marker_gt_rel_cam_qs->transform.rotation.x, marker_gt_rel_cam_qs->transform.rotation.y, marker_gt_rel_cam_qs->transform.rotation.z, marker_gt_rel_cam_qs->transform.rotation.w));
+        }
+
         // Calculate the PnP error            
         auto state_marker_rel_cam_gt = droneState::State("camera" + std::to_string(this->drone_id_) + "_gt", droneState::CS_type::XYZ);
         state_marker_rel_cam_gt.setPos(Eigen::Vector3d(marker_gt_rel_cam_gt->transform.translation.x, marker_gt_rel_cam_gt->transform.translation.y, marker_gt_rel_cam_gt->transform.translation.z));
         state_marker_rel_cam_gt.setAtt(tf2::Quaternion(marker_gt_rel_cam_gt->transform.rotation.x, marker_gt_rel_cam_gt->transform.rotation.y, marker_gt_rel_cam_gt->transform.rotation.z, marker_gt_rel_cam_gt->transform.rotation.w));
 
+        
         // Save the PnP error data to a file
-        this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_, state_drone_rel_world, state_load_rel_world);
+        this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_, state_marker_rel_cam_qs, state_drone_rel_world, state_load_rel_world);
 
         // PRINTING FOR DEBUGGING
         // Print ground truth
@@ -305,7 +316,7 @@ void SlungPoseMeasurement::evaluate_pose_measurement(){
     }
 }
 
-void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const droneState::State& state_marker_rel_cam_gt, const droneState::State& state_marker_rel_cam, const droneState::State& state_drone_rel_world, const droneState::State& state_load_rel_world){ //const std::string& filename, double distTrans, double distAngGeo) {
+void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const droneState::State& state_marker_rel_cam_gt, const droneState::State& state_marker_rel_cam, const droneState::State& state_marker_rel_cam_qs, const droneState::State& state_drone_rel_world, const droneState::State& state_load_rel_world){ //const std::string& filename, double distTrans, double distAngGeo) {
     std::ofstream logFile;
     logFile.open(filename, std::ios::app); // Open in append mode
 
@@ -332,19 +343,27 @@ void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const dron
 
     Eigen::Vector3d pos_gt = state_marker_rel_cam_gt.getPos();
     Eigen::Vector3d pos = state_marker_rel_cam.getPos();
+    Eigen::Vector3d pos_qs = state_marker_rel_cam_qs.getPos(); 
     Eigen::Vector3d pos_drone_rel_world = state_drone_rel_world.getPos();
     Eigen::Vector3d pos_load_rel_world = state_load_rel_world.getPos();
 
     Eigen::Vector3d rpy_gt = state_marker_rel_cam_gt.getAttYPR();
     Eigen::Vector3d rpy = state_marker_rel_cam.getAttYPR();
+    Eigen::Vector3d rpy_qs = state_marker_rel_cam_qs.getAttYPR(); 
     Eigen::Vector3d rpy_drone_rel_world = state_drone_rel_world.getAttYPR();
     Eigen::Vector3d rpy_load_rel_world = state_load_rel_world.getAttYPR();
     
     Eigen::Vector3d pos_err = pos - pos_gt;
     Eigen::Vector3d att_err = rpy - rpy_gt;
 
+    Eigen::Vector3d pos_err_qs = pos_qs - pos_gt;
+    Eigen::Vector3d att_err_qs = rpy_qs - rpy_gt;
+
     float distTrans = state_marker_rel_cam.distTrans(state_marker_rel_cam_gt);
     float distAngGeo = state_marker_rel_cam.distAngGeo(state_marker_rel_cam_gt)*180.0 / M_PI;
+
+    float distTransQs = state_marker_rel_cam_qs.distTrans(state_marker_rel_cam_gt);
+    float distAngGeoQs = state_marker_rel_cam_qs.distAngGeo(state_marker_rel_cam_gt)*180.0 / M_PI;
     
     if (logFile.is_open()) {
         logFile << time << " "
@@ -354,8 +373,17 @@ void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const dron
                 << rpy.x() << " " << rpy.y() << " " << rpy.z() << " "
                 << pos_err.x() << " " << pos_err.y() << " " << pos_err.z() << " "
                 << att_err.x() << " " << att_err.y() << " " << att_err.z() << " "
-                << distTrans << " " << distAngGeo << " "
-                << pos_drone_rel_world.x() << " " << pos_drone_rel_world.y() << " " << pos_drone_rel_world.z() << " "
+                << distTrans << " " << distAngGeo << " ";
+
+        // Quasi-static load comparison
+        logFile << pos_qs.x() << " " << pos_qs.y() << " " << pos_qs.z() << " "
+                << rpy_qs.x() << " " << rpy_qs.y() << " " << rpy_qs.z() << " "
+                << pos_err_qs.x() << " " << pos_err_qs.y() << " " << pos_err_qs.z() << " "
+                << att_err_qs.x() << " " << att_err_qs.y() << " " << att_err_qs.z() << " "
+                << distTransQs << " " << distAngGeoQs << " ";
+
+        // Drone poses
+        logFile << pos_drone_rel_world.x() << " " << pos_drone_rel_world.y() << " " << pos_drone_rel_world.z() << " "
                 << rpy_drone_rel_world.x() << " " << rpy_drone_rel_world.y() << " " << rpy_drone_rel_world.z() << " "
                 << pos_load_rel_world.x() << " " << pos_load_rel_world.y() << " " << pos_load_rel_world.z() << " "
                 << rpy_load_rel_world.x() << " " << rpy_load_rel_world.y() << " " << rpy_load_rel_world.z() << std::endl;

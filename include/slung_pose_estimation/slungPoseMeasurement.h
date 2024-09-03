@@ -52,7 +52,6 @@ private:
 
     std::vector<multi_drone_slung_load_interfaces::msg::Phase> drone_phases_;
     
-
     // Flags 
     bool flag_cam_k_set_ = false;
     bool flag_in_mission_phase_ = false;
@@ -74,7 +73,7 @@ private:
     void detect_marker(cv::Mat &outputImage, std::vector<cv::Point2f> &targetCorners, const int targetId);
     void measure_marker_pose(const std::vector<cv::Point2f> &targetCorners, cv::Mat &outputImage);
     void evaluate_pose_measurement();
-    void log_pnp_error(const std::string &filename, const droneState::State &state_marker_rel_cam_gt, const droneState::State &state_marker_rel_cam, const droneState::State &state_drone_rel_world, const droneState::State &state_load_rel_world);
+    void log_pnp_error(const std::string &filename, const droneState::State &state_marker_rel_cam_gt, const droneState::State &state_marker_rel_cam, const droneState::State &state_marker_rel_cam_qs, const droneState::State &state_drone_rel_world, const droneState::State &state_load_rel_world);
 
     // Calculate the camera calibration matrix
     // Inputs: fov_x - horizontal field of view in radians
