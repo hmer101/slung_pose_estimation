@@ -53,7 +53,7 @@ Logger::Logger() : Node("logger", rclcpp::NodeOptions().use_global_arguments(tru
     this->flag_in_mission_phase_ = false;
 
     // ROS2
-    rclcpp::QoS qos_profile_drone_system_ = rclcpp::SensorDataQoS();
+    rclcpp::QoS qos_profile_drone_system = rclcpp::SensorDataQoS();
 
     // SUBSCRIBERS
     // Loop to create subscriptions for multiple drones
@@ -64,7 +64,7 @@ Logger::Logger() : Node("logger", rclcpp::NodeOptions().use_global_arguments(tru
         // Create subscription and bind it with a lambda
         this->sub_phase_drones_[drone_index] = this->create_subscription<multi_drone_slung_load_interfaces::msg::Phase>(
             topic_name,
-            qos_profile_drone_system_,
+            qos_profile_drone_system,
             [this, drone_index](const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg) {
                 this->clbk_update_drone_phase(msg, drone_index);
             }
@@ -146,6 +146,14 @@ void Logger::clbk_timer(){
         this->states_drones_rel_world_desired[i-this->first_drone_num_] = state_drone_rel_world_desired; 
     }
     
+    // Log the ground truth poses
+    this->log_poses(this->logging_file_path_, state_load_rel_world_gt, state_load_rel_world_desired, state_load_rel_world_qs, this->states_drones_rel_world_gt, this->states_drones_rel_world_desired);
+}
+
+void Logger::log_poses(const std::string &filename, const droneState::State& state_load_rel_world_gt, const droneState::State& state_load_rel_world_desired, const droneState::State& state_load_rel_world_qs, const std::vector<droneState::State>& states_drones_rel_world_gt, const std::vector<droneState::State>& states_drones_rel_world_desired){
+    std::ofstream logFile;
+    logFile.open(filename, std::ios::app); // Open in append mode
+
     // DATA DIVIDERS   
     bool drones_in_mission_phase = std::all_of(this->drone_phases_.begin(), this->drone_phases_.end(), [](const multi_drone_slung_load_interfaces::msg::Phase& phase_msg) {
         return phase_msg.phase == multi_drone_slung_load_interfaces::msg::Phase::PHASE_MISSION_START; 
@@ -153,8 +161,8 @@ void Logger::clbk_timer(){
 
     // Add a blank line at the start and end of the mission phase
     if((drones_in_mission_phase && !this->flag_in_mission_phase_) || (!drones_in_mission_phase && this->flag_in_mission_phase_)){       
-        std::ofstream logFile;
-        logFile.open(this->logging_file_path_, std::ios::app);
+        // std::ofstream logFile;
+        // logFile.open(this->logging_file_path_, std::ios::app);
 
         if (logFile.is_open()) {
             // Log load poses
@@ -164,15 +172,8 @@ void Logger::clbk_timer(){
         this->flag_in_mission_phase_ = !this->flag_in_mission_phase_;
     }
 
-    // Log the ground truth poses
-    this->log_poses(this->logging_file_path_, state_load_rel_world_gt, state_load_rel_world_desired, state_load_rel_world_qs, this->states_drones_rel_world_gt, this->states_drones_rel_world_desired);
-}
-
-void Logger::log_poses(const std::string &filename, const droneState::State& state_load_rel_world_gt, const droneState::State& state_load_rel_world_desired, const droneState::State& state_load_rel_world_qs, const std::vector<droneState::State>& states_drones_rel_world_gt, const std::vector<droneState::State>& states_drones_rel_world_desired){
-    std::ofstream logFile;
-    logFile.open(filename, std::ios::app); // Open in append mode
-
-    // Log drone and load ground truth poses
+    
+    // LOG
     float time = this->get_clock()->now().seconds() - this->start_time_.seconds();
 
     // Convert load poses to Eigen

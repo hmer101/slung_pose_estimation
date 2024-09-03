@@ -15,6 +15,7 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 
+#include "multi_drone_slung_load_interfaces/msg/phase.hpp"
 #include "slung_pose_estimation/State.h"
 #include "slung_pose_estimation/utils.h"
 
@@ -29,6 +30,9 @@ private:
     std::string ns_; // Namespace of the node
     int drone_id_; // ID of the drone this node is running on
     int load_id_;
+
+    int num_drones_;
+    int first_drone_num_;
 
     std::string env_;
     bool evaluate_;           // Whether to evaluate the pose estimation vs ground truth
@@ -46,12 +50,17 @@ private:
 
     std::string logging_file_path_;
 
+    std::vector<multi_drone_slung_load_interfaces::msg::Phase> drone_phases_;
+    
+
     // Flags 
     bool flag_cam_k_set_ = false;
+    bool flag_in_mission_phase_ = false;
 
     // SUBSCRIBERS
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img_drone_;
-    rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr sub_cam_color_info;
+    rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr sub_cam_color_info_;
+    std::vector<rclcpp::Subscription<multi_drone_slung_load_interfaces::msg::Phase>::SharedPtr> sub_phase_drones_;
 
     // PUBLISHERS
     rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pub_marker_rel_camera_;
@@ -59,6 +68,7 @@ private:
     // CALLBACKS
     void clbk_cam_color_info_received(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
     void clbk_image_received(const sensor_msgs::msg::Image::SharedPtr msg);
+    void clbk_update_drone_phase(const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg, const int drone_index);
 
     // HELPERS
     void detect_marker(cv::Mat &outputImage, std::vector<cv::Point2f> &targetCorners, const int targetId);

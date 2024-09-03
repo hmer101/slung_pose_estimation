@@ -2,13 +2,27 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 
-def read_log_file(filename):
+def read_log_file(filename, only_read_mission=False):
     time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo = [], [], [], [], [], [], [], [], []
     pos_drone_rel_world, rpy_drone_rel_world = [], []
     pos_load_rel_world, rpy_load_rel_world = [], []
     
+    # State variables
+    in_mission_block = False
+
     with open(filename, 'r') as file:
         for line in file:
+            line = line.strip()
+            
+            # Check for blank line to toggle the in_mission_block state
+            if not line:
+                in_mission_block = not in_mission_block
+                continue  # Skip the blank line
+
+            # Only process lines if we're in the mission block
+            if only_read_mission and not in_mission_block:
+                continue
+
             data = line.split()
             if len(data) == 33: #21:
                 time.append(float(data[0]))
@@ -226,8 +240,9 @@ def main():
     plot_data_for = [1] #, 2, 3] #[1, 2, 3] # Drones to plot data for
 
     # Retrieve data from log file
-    path = '/home/harvey/px4_ros_com_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename_common = path + '2024_06_09_measurement_drone' #'20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
+    path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
+    filename_common = path + '2024_09_03_10_16_45_measurement_drone' #'20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
+    only_plot_mission_phase = True
 
     # Store data from all drones
     time = [None]*num_drones # Get starting times from all drones to align the data
@@ -246,7 +261,7 @@ def main():
 
     for i in range(num_drones):
         filename = filename_common + str(i+start_drone_num) + '.txt'
-        time[i], pos_gt[i], rpy_gt[i], pos[i], rpy[i], pos_err[i], att_err[i], distTrans[i], distAngGeo[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i] = read_log_file(filename)
+        time[i], pos_gt[i], rpy_gt[i], pos[i], rpy[i], pos_err[i], att_err[i], distTrans[i], distAngGeo[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i] = read_log_file(filename, only_read_mission=only_plot_mission_phase)
     
     # Find start time
     time_start = min([times[0] for times in time])
@@ -259,8 +274,8 @@ def main():
         plot_data(time[i], pos_gt[i], rpy_gt_proc, pos[i], rpy_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
         plot_errors(time[i], pos_err[i], att_err_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
         plot_trans_geo(time[i], distTrans[i], distAngGeo[i], title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-        plot_trajectory(time[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i], 
-                    title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        # plot_trajectory(time[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i], 
+        #             title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
 
     # Single drone

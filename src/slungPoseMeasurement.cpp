@@ -14,11 +14,14 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->ns_ = this->get_namespace();
     this->drone_id_ = utils::extract_id_from_name(this->ns_);
 
-    // this->declare_parameter<int>("first_drone_num", 1);
-    // this->get_parameter("first_drone_num", this->first_drone_num_);
-
     this->declare_parameter<std::string>("env", "phys");
     this->get_parameter("env", this->env_);
+
+    this->declare_parameter<int>("num_drones", 3);
+    this->get_parameter("num_drones", this->num_drones_);
+
+    this->declare_parameter<int>("first_drone_num_", 1);
+    this->get_parameter("first_drone_num_", this->first_drone_num_);
 
     this->declare_parameter<int>("show_markers", 0);
     this->get_parameter("show_markers", this->show_markers_config_); 
@@ -60,6 +63,10 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock()); //tf2_ros::Buffer(std::make_shared<rclcpp::Clock>());
     this->tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*(this->tf_buffer_));
 
+    this->drone_phases_.resize(this->num_drones_);
+    this->sub_phase_drones_.resize(this->num_drones_);
+    this->flag_in_mission_phase_ = false;
+
     // ROS2
     rclcpp::QoS qos_profile_cam = rclcpp::SensorDataQoS();
     rclcpp::QoS qos_profile_drone_system = rclcpp::SensorDataQoS();
@@ -81,8 +88,23 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->sub_img_drone_ = this->create_subscription<sensor_msgs::msg::Image>(
         image_topic_rgb, qos_profile_cam, std::bind(&SlungPoseMeasurement::clbk_image_received, this, std::placeholders::_1));
 
-    this->sub_cam_color_info = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+    this->sub_cam_color_info_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
         cam_info_topic, qos_profile_cam, std::bind(&SlungPoseMeasurement::clbk_cam_color_info_received, this, std::placeholders::_1)); 
+
+    // Loop to create subscriptions for multiple drones
+    for (int i = this->first_drone_num_; i < this->num_drones_ + this->first_drone_num_; ++i) {
+        int drone_index = i - this->first_drone_num_;
+        auto topic_name = "/px4_" + std::to_string(i) + "/out/current_phase";
+
+        // Create subscription and bind it with a lambda
+        this->sub_phase_drones_[drone_index] = this->create_subscription<multi_drone_slung_load_interfaces::msg::Phase>(
+            topic_name,
+            qos_profile_drone_system,
+            [this, drone_index](const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg) {
+                this->clbk_update_drone_phase(msg, drone_index);
+            }
+        );
+    }
 
     // PUBLISHERS
     this->pub_marker_rel_camera_ = this->create_publisher<geometry_msgs::msg::Pose>(
@@ -150,6 +172,11 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
             this->evaluate_pose_measurement();
         }
     }
+}
+
+void SlungPoseMeasurement::clbk_update_drone_phase(const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg, const int drone_index)
+{
+    this->drone_phases_[drone_index].phase = msg->phase;
 }
 
 // Extract the ArUco marker corners from the image and draw the detected markers if desired
@@ -282,7 +309,25 @@ void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const dron
     std::ofstream logFile;
     logFile.open(filename, std::ios::app); // Open in append mode
 
-    // Get data to log
+    // DATA DIVIDERS   
+    bool drones_in_mission_phase = std::all_of(this->drone_phases_.begin(), this->drone_phases_.end(), [](const multi_drone_slung_load_interfaces::msg::Phase& phase_msg) {
+        return phase_msg.phase == multi_drone_slung_load_interfaces::msg::Phase::PHASE_MISSION_START; 
+    });
+
+    // Add a blank line at the start and end of the mission phase
+    if((drones_in_mission_phase && !this->flag_in_mission_phase_) || (!drones_in_mission_phase && this->flag_in_mission_phase_)){       
+        // std::ofstream logFile;
+        // logFile.open(this->logging_file_path_, std::ios::app);
+
+        if (logFile.is_open()) {
+            // Log load poses
+            logFile << std::endl;
+        }
+
+        this->flag_in_mission_phase_ = !this->flag_in_mission_phase_;
+    }
+
+    // GET DATA TO LOG
     float time = this->get_clock()->now().seconds() - this->start_time_.seconds();
 
     Eigen::Vector3d pos_gt = state_marker_rel_cam_gt.getPos();
