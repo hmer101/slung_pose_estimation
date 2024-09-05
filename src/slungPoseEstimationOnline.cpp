@@ -3,15 +3,13 @@
 #include <sensor_msgs/msg/camera_info.hpp>
 
 #include "slung_pose_estimation/slungPoseMeasurement.h"
-#include "slung_pose_estimation/frame_transforms.h"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fstream>
 
 #include <chrono> // Include for std::chrono
 #include <iomanip> // Include for std::put_time
-//#include <Eigen/Dense>
 
-SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp::NodeOptions().use_global_arguments(true)) {
+SlungPoseEstimationOnline::SlungPoseEstimationOnline() : Node("slung_pose_estimation", rclcpp::NodeOptions().use_global_arguments(true)) {
     // PARAMETERS
     this->ns_ = this->get_namespace();
     this->drone_id_ = utils::extract_id_from_name(this->ns_);
@@ -25,124 +23,63 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->declare_parameter<int>("first_drone_num_", 1);
     this->get_parameter("first_drone_num_", this->first_drone_num_);
 
-    this->declare_parameter<int>("show_markers", 0);
-    this->get_parameter("show_markers", this->show_markers_config_); 
-
-    this->declare_parameter<float>("marker_edge_length", 0.08f);
-    this->get_parameter("marker_edge_length", this->marker_edge_length_);
-
-    this->declare_parameter<bool>("evaluate", false);
-    this->get_parameter("evaluate", this->evaluate_);
-
     this->declare_parameter<int>("load_id", 1);
     this->get_parameter("load_id", this->load_id_);
 
-    std::vector<double> t_marker_rel_load;
-    std::vector<double> R_marker_rel_load;
-    this->declare_parameter("t_marker_rel_load", std::vector<double>{0.0, 0.0, 0.1});
-    this->declare_parameter("R_marker_rel_load", std::vector<double>{0.0, 0.0, M_PI / 2});
-    this->get_parameter("t_marker_rel_load", t_marker_rel_load);
-    this->get_parameter("R_marker_rel_load", R_marker_rel_load);        
-
-    std::string topic_img_rgb;
-    this->declare_parameter<std::string>("topic_img_rgb","");
-    this->get_parameter("topic_img_rgb", topic_img_rgb);
-
-    std::string topic_cam_info_color; 
-    this->declare_parameter<std::string>("topic_cam_info_color","");
-    this->get_parameter("topic_cam_info_color", topic_cam_info_color);
-
-
     // Get the current time
     auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    auto init_time = std::chrono::system_clock::to_time_t(now);
 
     std::stringstream ss;
-    ss << std::put_time(std::localtime(&in_time_t), "%Y_%m_%d_%H_%M_%S_"); // Format the time
+    ss << std::put_time(std::localtime(&init_time), "%Y_%m_%d_%H_%M_%S_"); // Format the time
 
     // Set the logging file path
-    std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
-    //std::string filepath = "/data/measurement_drone" + std::to_string(this->drone_id_) + ".txt";
-    std::string filename = "measurement_drone" + std::to_string(this->drone_id_) + ".txt";
-    std::string filepath = "/data/" + ss.str() + filename; // Prepend the formatted time to the filename
-    this->logging_file_path_ = package_share_directory + filepath;
+    // std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
+    // std::string filename = "measurement_drone" + std::to_string(this->drone_id_) + ".txt";
+    // std::string filepath = "/data/" + ss.str() + filename; // Prepend the formatted time to the filename
+    // this->logging_file_path_ = package_share_directory + filepath;
 
     // VARIABLES
-    this->state_marker_rel_camera_ = droneState::State("camera" + std::to_string(this->drone_id_), droneState::CS_type::XYZ);
-    this->state_expected_pose_measurement_ = droneState::State("camera" + std::to_string(this->drone_id_), droneState::CS_type::XYZ);
-
-    this->drone_phases_.resize(this->num_drones_);
-    this->sub_phase_drones_.resize(this->num_drones_);
-    
-    // TFs
-    this->tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock()); //tf2_ros::Buffer(std::make_shared<rclcpp::Clock>());
+    this->tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     this->tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*(this->tf_buffer_));
 
     this->tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-    this->tf_static_broadcaster_marker_rel_load_est_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
 
+    // this->drone_phases_.resize(this->num_drones_);
+    // this->sub_phase_drones_.resize(this->num_drones_);
+    
+
+    
     // Flags
     // this->flag_in_mission_phase_ = false;
     // this->flag_expected_pose_measurement_set_ = false;
 
     // ROS2
-    rclcpp::QoS qos_profile_cam = rclcpp::SensorDataQoS();
     rclcpp::QoS qos_profile_drone_system = rclcpp::SensorDataQoS();
 
     // SUBSCRIBERS
-    // Set camera topics
-    std::string image_topic_rgb = topic_img_rgb;
-    std::string cam_info_topic = topic_cam_info_color;
-
-    if(this->env_ == "sim"){
-        image_topic_rgb = this->ns_ + image_topic_rgb;
-        cam_info_topic = this->ns_ + cam_info_topic;
-    }else if(this->env_ == "phys"){
-        std::string topic_name_prefix = this->ns_ + "/" + "camera" + std::to_string(this->drone_id_);
-        image_topic_rgb = topic_name_prefix + topic_img_rgb;
-        cam_info_topic = topic_name_prefix + topic_cam_info_color;
-    }
-    
-    this->sub_img_drone_ = this->create_subscription<sensor_msgs::msg::Image>(
-        image_topic_rgb, qos_profile_cam, std::bind(&SlungPoseMeasurement::clbk_image_received, this, std::placeholders::_1));
-
-    this->sub_cam_color_info_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-        cam_info_topic, qos_profile_cam, std::bind(&SlungPoseMeasurement::clbk_cam_color_info_received, this, std::placeholders::_1)); 
-
     // Loop to create subscriptions for multiple drones
-    for (int i = this->first_drone_num_; i < this->num_drones_ + this->first_drone_num_; ++i) {
-        int drone_index = i - this->first_drone_num_;
-        auto topic_name = "/px4_" + std::to_string(i) + "/out/current_phase";
+    // for (int i = this->first_drone_num_; i < this->num_drones_ + this->first_drone_num_; ++i) {
+    //     int drone_index = i - this->first_drone_num_;
+    //     auto topic_name = "/px4_" + std::to_string(i) + "/out/current_phase";
 
-        // Create subscription and bind it with a lambda
-        this->sub_phase_drones_[drone_index] = this->create_subscription<multi_drone_slung_load_interfaces::msg::Phase>(
-            topic_name,
-            qos_profile_drone_system,
-            [this, drone_index](const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg) {
-                this->clbk_update_drone_phase(msg, drone_index);
-            }
-        );
-    }
+    //     // Create subscription and bind it with a lambda
+    //     this->sub_phase_drones_[drone_index] = this->create_subscription<multi_drone_slung_load_interfaces::msg::Phase>(
+    //         topic_name,
+    //         qos_profile_drone_system,
+    //         [this, drone_index](const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg) {
+    //             this->clbk_update_drone_phase(msg, drone_index);
+    //         }
+    //     );
+    // }
 
     // PUBLISHERS
-    // this->pub_marker_rel_camera_ = this->create_publisher<geometry_msgs::msg::Pose>(
-    //     this->ns_ + "/out/marker_rel_camera", qos_profile_drone_system);
+    this->pub_marker_rel_camera_ = this->create_publisher<geometry_msgs::msg::Pose>(
+        this->ns_ + "/out/marker_rel_camera", qos_profile_drone_system);
 
 
     // SETUP
     this->start_time_ = this->get_clock()->now();
-
-    // Set static TFs (inverse of the way they are defined in yaml files to maintain tree structure)
-    Eigen::Vector3d t_marker_rel_load_eig = Eigen::Vector3d(t_marker_rel_load[0], t_marker_rel_load[1], t_marker_rel_load[2]);
-    Eigen::Vector3d R_marker_rel_load_eig = Eigen::Vector3d(R_marker_rel_load[0], R_marker_rel_load[1], R_marker_rel_load[2]);
-    Eigen::Quaterniond R_marker_rel_load_q = frame_transforms::utils::quaternion::quaternion_from_euler(R_marker_rel_load_eig);
-
-    utils::broadcast_tf(this->start_time_,
-                        "load_marker" + std::to_string(this->load_id_) + "_measured" + std::to_string(this->drone_id_),
-                        "load" + std::to_string(this->load_id_) + "_measured" + std::to_string(this->drone_id_),
-                        -t_marker_rel_load_eig,
-                        R_marker_rel_load_q.inverse(),
-                        *this->tf_static_broadcaster_marker_rel_load_est_);
 
     // Get the camera calibration matrix for the camera (TODO: Replace with subscription to camera_info topic)
     this->cam_K_ = (cv::Mat_<double>(3, 3) << 1.0, 0.0, 0.0,
@@ -157,12 +94,8 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     }
 
     // Print info
-    RCLCPP_INFO(this->get_logger(), "MEASUREMENT NODE %d", this->drone_id_);    
-}
-
-SlungPoseMeasurement::~SlungPoseMeasurement() {
-    // Destroy the window when the object is destroyed
-    cv::destroyWindow("Detected Markers Drone " + std::to_string(this->drone_id_));
+    RCLCPP_INFO(this->get_logger(), "ESTIMATION NODE %d", this->drone_id_);
+    
 }
 
 void SlungPoseMeasurement::clbk_cam_color_info_received(const sensor_msgs::msg::CameraInfo::SharedPtr msg){
@@ -195,8 +128,6 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
     if (!targetCorners.empty() && this->flag_cam_k_set_) {
         // ESTIMATE MARKER POSE
         bool poseEstimated = this->measure_marker_pose(targetCorners, outputImage);
-
-
 
         // EVALUATE MARKER POSE
         if (poseEstimated && this->evaluate_) {
@@ -293,28 +224,11 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
 
         RCLCPP_INFO(this->get_logger(), "Selecting load measurement closest to expected.");
     }
-    else if (!this->flag_expected_pose_measurement_set_) // An expected load pose is not known from a previous time
-    {                 
+    else if (!this->flag_expected_pose_measurement_set_)
+    {                 // An expected load pose is not known from a previous time
         RCLCPP_INFO(this->get_logger(), "No prior load pose has yet been set.");
         return false; // No priors can be used to disambiguate. Could just select the minimum error, safer to skip.
     }
-    // }else // Initial measurements have been taken in the formation phase, can now use estimated load as prior
-    // {
-    //     // Look up expected load pose from estimator
-
-
-    //     RCLCPP_INFO(this->get_logger(), "Estimator is yet to produce a result.");
-    //     return false; // No priors can be used to disambiguate. Could just select the minimum error, safer to skip.
-
-    //     // Transform into this camera's frame
-
-    //     // Set the expected pose measurement
-        
-    //     this->state_expected_pose_measurement_.setPos(Eigen::Vector3d(expectedPose->transform.translation.x, ->transform.translation.y, expectedPose->transform.translation.z));
-    //     this->state_expected_pose_measurement_.setAtt(tf2::Quaternion(expectedPose->transform.rotation.x, ->transform.rotation.y, expectedPose->transform.rotation.z, expectedPose->transform.rotation.w));
-
-        
-    // }
 
     // Loop through possible solutions, comparing to expected solution
     //cv::Vec3d bestRvec, bestTvec;
@@ -346,54 +260,28 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
         }
     }
 
+    // Output or use the best solution found
+    // RCLCPP_INFO(this->get_logger(), "Best Rvec: [%.2f, %.2f, %.2f]", rvec[0], rvec[1], rvec[2]);
+    // RCLCPP_INFO(this->get_logger(), "Best Tvec: [%.2f, %.2f, %.2f]", tvec[0], tvec[1], tvec[2]);
+
+
     // If the selected solution does not have a small enough reprojection error, reject the measurement
     // (perhaps also unset the prior? or at least have some way of flicking back to the other solution?)
-
-
-
-    // Always broadcast the measured pose (so the estimator can choose whether or not to accept it)
-    // Broadcast measured pose relative to camera coordinate system (may introduce errors from current drone pose error when looking up)
-    Eigen::Vector3d t_marker_rel_cam_measured = Eigen::Vector3d(tvec[0], tvec[1], tvec[2]); //(t_marker_rel_load[0], t_marker_rel_load[1], t_marker_rel_load[2]);
-    // Eigen::Vector3d R_marker_rel_cam_measured = utils::convert_rvec_to_quaternion(rvec); //(R_marker_rel_load[0], R_marker_rel_load[1], R_marker_rel_load[2]);
-    // Eigen::Quaterniond R_marker_rel_cam_measured_q = frame_transforms::utils::quaternion::quaternion_from_euler(R_marker_rel_load_eig);
-    //Eigen::Quaterniond R_marker_rel_cam_measured_q = utils::convert_rvec_to_quaternion(rvec); //(R_marker_rel_load[0], R_marker_rel_load[1], R_marker_rel_load[2]);
-    
-    Eigen::Vector3d R_marker_rel_cam_measured_eig = Eigen::Vector3d(rvec[0], rvec[1], rvec[2]);
-    Eigen::Quaterniond R_marker_rel_cam_measured_q = frame_transforms::utils::quaternion::quaternion_from_euler(R_marker_rel_cam_measured_eig);
-
-    utils::broadcast_tf(this->start_time_,
-                        "camera" + std::to_string(this->drone_id_),
-                        "load_marker" + std::to_string(this->load_id_) + "_measured" + std::to_string(this->drone_id_),
-                        t_marker_rel_cam_measured,
-                        R_marker_rel_cam_measured_q,
-                        *this->tf_broadcaster_);
-
-
-
-    
-    // Only update the pose for logging if the selected orientation is closer to the estimated orientation than an error threshold 
-    // or the estimated pose has not yet been set
-
-
 
 
     // Mutate standard containers accessible for later logging
     this->state_marker_rel_camera_.setAtt(utils::convert_rvec_to_quaternion(rvec));
     this->state_marker_rel_camera_.setPos(Eigen::Vector3d(tvec[0], tvec[1], tvec[2]));
 
-    // Update expected state to the newly measured one
-    // this->state_expected_pose_measurement_.setPos(this->state_marker_rel_camera_.getPos());
-    // this->state_expected_pose_measurement_.setAtt(this->state_marker_rel_camera_.getAtt());
+    // Publish measured marker pose rel camera
+    geometry_msgs::msg::Pose pose_msg = utils::convert_state_to_pose_msg(this->state_marker_rel_camera_);
+    this->pub_marker_rel_camera_->publish(pose_msg);
 
-    // Update the expected state to the one published by the state estimator
+    // Update expected state to the newly measured one
     this->state_expected_pose_measurement_.setPos(this->state_marker_rel_camera_.getPos());
     this->state_expected_pose_measurement_.setAtt(this->state_marker_rel_camera_.getAtt());
 
-
-
-
-
-    // Display the image with detected markers if desired, and marker pose is selected
+    // Display the image with detected markers if desired
     if (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1)){
         // Draw the detected marker axes
         cv::drawFrameAxes(outputImage, this->cam_K_, distCoeffs, rvec, tvec, 0.1);

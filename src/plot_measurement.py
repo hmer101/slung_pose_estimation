@@ -298,7 +298,7 @@ def main():
 
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename_common = path + '2024_09_03_16_43_24_measurement_drone' #'20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
+    filename_common = path + '2024_09_04_16_00_56_measurement_drone' #'20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
     only_plot_mission_phase = True
 
     # Store data from all drones

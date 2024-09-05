@@ -44,17 +44,22 @@ private:
 
     // VARIABLES
     droneState::State state_marker_rel_camera_;
-
-    std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    droneState::State state_expected_pose_measurement_;
 
     std::string logging_file_path_;
 
     std::vector<multi_drone_slung_load_interfaces::msg::Phase> drone_phases_;
+
+    std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+    std::shared_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_marker_rel_load_est_;
+
     
     // Flags 
     bool flag_cam_k_set_ = false;
     bool flag_in_mission_phase_ = false;
+    bool flag_expected_pose_measurement_set_ = false;
 
     // SUBSCRIBERS
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img_drone_;
@@ -62,7 +67,7 @@ private:
     std::vector<rclcpp::Subscription<multi_drone_slung_load_interfaces::msg::Phase>::SharedPtr> sub_phase_drones_;
 
     // PUBLISHERS
-    rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pub_marker_rel_camera_;
+    //rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pub_marker_rel_camera_;
 
     // CALLBACKS
     void clbk_cam_color_info_received(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
@@ -71,7 +76,7 @@ private:
 
     // HELPERS
     void detect_marker(cv::Mat &outputImage, std::vector<cv::Point2f> &targetCorners, const int targetId);
-    void measure_marker_pose(const std::vector<cv::Point2f> &targetCorners, cv::Mat &outputImage);
+    bool measure_marker_pose(const std::vector<cv::Point2f> &targetCorners, cv::Mat &outputImage);
     void evaluate_pose_measurement();
     void log_pnp_error(const std::string &filename, const droneState::State &state_marker_rel_cam_gt, const droneState::State &state_marker_rel_cam, const droneState::State &state_marker_rel_cam_qs, const droneState::State &state_drone_rel_world, const droneState::State &state_load_rel_world);
 

@@ -9,6 +9,58 @@
 
 namespace utils {
     // TRANSFORMS
+    void broadcast_tf(
+        const rclcpp::Time &time, 
+        const std::string &frame_parent, 
+        const std::string &frame_child, 
+        const Eigen::Vector3d &pos, 
+        const Eigen::Quaterniond &att, 
+        tf2_ros::TransformBroadcaster &broadcaster)
+    {
+        geometry_msgs::msg::TransformStamped t;
+
+        t.header.stamp = time;
+        t.header.frame_id = frame_parent;
+        t.child_frame_id = frame_child;
+
+        t.transform.translation.x = pos[0];
+        t.transform.translation.y = pos[1];
+        t.transform.translation.z = pos[2];
+
+        t.transform.rotation.x = att.x();
+        t.transform.rotation.y = att.y();
+        t.transform.rotation.z = att.z();
+        t.transform.rotation.w = att.w();
+
+        broadcaster.sendTransform(t);
+    }
+    
+    void broadcast_tf(
+        const rclcpp::Time &time, 
+        const std::string &frame_parent, 
+        const std::string &frame_child, 
+        const Eigen::Vector3d &pos, 
+        const Eigen::Quaterniond &att, 
+        tf2_ros::StaticTransformBroadcaster &broadcaster)
+    {
+        geometry_msgs::msg::TransformStamped t;
+
+        t.header.stamp = time;
+        t.header.frame_id = frame_parent;
+        t.child_frame_id = frame_child;
+
+        t.transform.translation.x = pos[0];
+        t.transform.translation.y = pos[1];
+        t.transform.translation.z = pos[2];
+
+        t.transform.rotation.x = att.x();
+        t.transform.rotation.y = att.y();
+        t.transform.rotation.z = att.z();
+        t.transform.rotation.w = att.w();
+
+        broadcaster.sendTransform(t);
+    }
+    
     std::optional<geometry_msgs::msg::TransformStamped> lookup_tf( 
         const std::string& target_frame, 
         const std::string& source_frame,
