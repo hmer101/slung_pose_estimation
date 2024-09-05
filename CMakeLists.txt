@@ -81,6 +81,7 @@ add_library(frame_transforms src/frame_transforms.cpp)
 add_executable(slung_pose_measurement src/slungPoseMeasurement.cpp)
 add_executable(tester src/tester.cpp)
 add_executable(slung_pose_estimation src/slungPoseEstimation.cpp)
+add_executable(slung_pose_estimation_online src/slungPoseEstimationOnline.cpp)
 add_executable(logger src/logger.cpp)
 
 
@@ -106,6 +107,11 @@ target_link_libraries(slung_pose_estimation
   utils
 )
 
+target_link_libraries(slung_pose_estimation_online
+  State
+  utils
+)
+
 target_link_libraries(State
   utils
 )
@@ -121,6 +127,7 @@ ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
 ament_target_dependencies(utils rclcpp tf2_ros tf2_eigen Eigen3 std_msgs tf2_geometry_msgs OpenCV)
 ament_target_dependencies(frame_transforms Eigen3 tf2_geometry_msgs sensor_msgs)
 ament_target_dependencies(slung_pose_measurement rclcpp Eigen3 std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs multi_drone_slung_load_interfaces)
+ament_target_dependencies(slung_pose_estimation_online rclcpp Eigen3 std_msgs tf2_geometry_msgs multi_drone_slung_load_interfaces)
 ament_target_dependencies(logger rclcpp multi_drone_slung_load_interfaces) #std_msgs tf2_geometry_msgs
 
 
@@ -151,6 +158,7 @@ install(TARGETS
   logger
   slung_pose_measurement
   slung_pose_estimation
+  slung_pose_estimation_online
   DESTINATION lib/${PROJECT_NAME})
 
 

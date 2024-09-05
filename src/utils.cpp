@@ -186,6 +186,30 @@ namespace utils {
         return pose_msg;
     }
 
+    droneState::State convert_tf_stamped_msg_to_state(const geometry_msgs::msg::TransformStamped& pose_msg, 
+                                                std::string frame, 
+                                                droneState::CS_type cs_type, 
+                                                Eigen::Vector3d vel){
+        // Extract position from pose_msg
+        Eigen::Vector3d pos = Eigen::Vector3d(pose_msg.transform.translation.x, 
+                                              pose_msg.transform.translation.y, 
+                                              pose_msg.transform.translation.z);
+        
+        // Extract orientation from pose_msg
+        tf2::Quaternion att(pose_msg.transform.rotation.x, 
+                            pose_msg.transform.rotation.y, 
+                            pose_msg.transform.rotation.z, 
+                            pose_msg.transform.rotation.w);
+
+        // Set position and orientation in state
+        droneState::State state = droneState::State(frame, cs_type, pos, att, vel);
+
+        // state.setPos(position);
+        // state.setAtt(att);
+
+        return state;
+    }
+
     tf2::Quaternion convert_rvec_to_quaternion(const cv::Vec3d& rvec) {
         // Convert rotation vector to rotation matrix
         cv::Mat rotMat;

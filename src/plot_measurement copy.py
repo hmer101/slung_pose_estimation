@@ -292,9 +292,9 @@ def main():
     legend_font_size = 12
     ticks_font_size = 10
 
-    num_drones = 2
-    start_drone_num = 2
-    plot_data_for = [2, 3] #, 2, 3] #[1, 2, 3] # Drones to plot data for
+    num_drones = 1
+    start_drone_num = 1
+    plot_data_for = [1] #, 2, 3] #[1, 2, 3] # Drones to plot data for
 
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
@@ -342,15 +342,12 @@ def main():
         # plot_trajectory(time[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i], 
         #             title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
-        # Drone number
-        print(f'Drone {i+start_drone_num}')
-              
-        # Get conglomorate metrics for distance from quasi-static
-        print(f'Mean translational measurement error magnitude from ground truth: {np.mean(distTrans[i])} m')
-        print(f'Mean translational distance magnitude of quasi-static from ground truth: {np.mean(distTransQs[i])} m')
-        
-        print(f'Mean geodesic attitude measurement error from ground truth: {np.mean(distAngGeo[i])} deg')
-        print(f'Mean geodesic attitude distance of quasi-static from ground truth: {np.mean(distAngGeoQs[i])} deg')
+    # Get conglomorate metrics for distance from quasi-static
+    print(f'Mean translational measurement error magnitude from ground truth: {np.mean(distTrans)} m')
+    print(f'Mean translational distance magnitude of quasi-static from ground truth: {np.mean(distTransQs)} m')
+    
+    print(f'Mean geodesic attitude measurement error from ground truth: {np.mean(distAngGeo)} deg')
+    print(f'Mean geodesic attitude distance of quasi-static from ground truth: {np.mean(distAngGeoQs)} deg')
 
     # Single drone
     #time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world = read_log_file(filename)

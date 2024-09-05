@@ -40,7 +40,8 @@ namespace utils {
 
     // CONVERSIONS
     Eigen::Vector3d convert_vec_floats_to_eigen(const std::vector<float> &float_vector);  
-    geometry_msgs::msg::Pose convert_state_to_pose_msg(const droneState::State &state); 
+    geometry_msgs::msg::Pose convert_state_to_pose_msg(const droneState::State &state);
+    droneState::State convert_tf_stamped_msg_to_state(const geometry_msgs::msg::TransformStamped &pose_msg, std::string frame, droneState::CS_type cs_type, Eigen::Vector3d vel = Eigen::Vector3d(0.0, 0.0, 0.0));
     tf2::Quaternion convert_rvec_to_quaternion(const cv::Vec3d &rvec);
     Eigen::Matrix3d convert_rvec_to_rotmat(const Eigen::Vector3d &rvec);
 }

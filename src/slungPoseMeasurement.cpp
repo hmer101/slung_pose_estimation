@@ -144,7 +144,7 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
                         R_marker_rel_load_q.inverse(),
                         *this->tf_static_broadcaster_marker_rel_load_est_);
 
-    // Get the camera calibration matrix for the camera (TODO: Replace with subscription to camera_info topic)
+    // Get the camera calibration matrix for the camera
     this->cam_K_ = (cv::Mat_<double>(3, 3) << 1.0, 0.0, 0.0,
                                         0.0, 1.0, 0.0,
                                         0.0, 0.0, 1.0);
@@ -323,10 +323,8 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
 
     for (size_t i = 0; i < rvecs.size(); ++i) {
         // Get next possible solution
-        cv::Vec3d rvecMat = rvecs[i]; //cv::Mat .getMat(i);
-        cv::Vec3d tvecMat = tvecs[i]; //.getMat(i);
-        
-        //if (rvecMat.empty() || tvecMat.empty()) continue;
+        cv::Vec3d rvecMat = rvecs[i];
+        cv::Vec3d tvecMat = tvecs[i];
 
         // Convert to state for easy geometric distance
         droneState::State candidate_measurement = droneState::State("camera" + std::to_string(this->drone_id_), droneState::CS_type::XYZ);
@@ -336,13 +334,11 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
         // Compare to the expected measurement
         double currentError = candidate_measurement.distAngGeo(this->state_expected_pose_measurement_);
 
-        // double currentError = reprojErr.at<double>(i); // Assuming reprojErr has corresponding errors .getMatRef()
-
         // Update the best solution
         if (currentError < minError) {
             minError = currentError;
-            rvec = rvecMat; //cv::Vec3d(rvecMat.at<double>(0), rvecMat.at<double>(1), rvecMat.at<double>(2));
-            tvec = tvecMat; //cv::Vec3d(tvecMat.at<double>(0), tvecMat.at<double>(1), tvecMat.at<double>(2));
+            rvec = rvecMat;
+            tvec = tvecMat;
         }
     }
 
@@ -354,21 +350,17 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
     // Always broadcast the measured pose (so the estimator can choose whether or not to accept it)
     // Broadcast measured pose relative to camera coordinate system (may introduce errors from current drone pose error when looking up)
     Eigen::Vector3d t_marker_rel_cam_measured = Eigen::Vector3d(tvec[0], tvec[1], tvec[2]); //(t_marker_rel_load[0], t_marker_rel_load[1], t_marker_rel_load[2]);
-    // Eigen::Vector3d R_marker_rel_cam_measured = utils::convert_rvec_to_quaternion(rvec); //(R_marker_rel_load[0], R_marker_rel_load[1], R_marker_rel_load[2]);
-    // Eigen::Quaterniond R_marker_rel_cam_measured_q = frame_transforms::utils::quaternion::quaternion_from_euler(R_marker_rel_load_eig);
-    //Eigen::Quaterniond R_marker_rel_cam_measured_q = utils::convert_rvec_to_quaternion(rvec); //(R_marker_rel_load[0], R_marker_rel_load[1], R_marker_rel_load[2]);
-    
-    Eigen::Vector3d R_marker_rel_cam_measured_eig = Eigen::Vector3d(rvec[0], rvec[1], rvec[2]);
-    Eigen::Quaterniond R_marker_rel_cam_measured_q = frame_transforms::utils::quaternion::quaternion_from_euler(R_marker_rel_cam_measured_eig);
 
-    utils::broadcast_tf(this->start_time_,
-                        "camera" + std::to_string(this->drone_id_),
+    tf2::Quaternion tf2_quaternion = utils::convert_rvec_to_quaternion(rvec);
+    // Eigen::Vector3d R_marker_rel_cam_measured_eig = Eigen::Vector3d(rvec[0], rvec[1], rvec[2]);
+    Eigen::Quaterniond R_marker_rel_cam_measured_q = Eigen::Quaterniond(tf2_quaternion.w(), tf2_quaternion.x(), tf2_quaternion.y(), tf2_quaternion.z()); // frame_transforms::utils::quaternion::quaternion_from_euler(R_marker_rel_cam_measured_eig);
+
+    utils::broadcast_tf(this->get_clock()->now(),
+                        "camera" + std::to_string(this->drone_id_) + "_gt", //+ "_gt"
                         "load_marker" + std::to_string(this->load_id_) + "_measured" + std::to_string(this->drone_id_),
                         t_marker_rel_cam_measured,
                         R_marker_rel_cam_measured_q,
                         *this->tf_broadcaster_);
-
-
 
     
     // Only update the pose for logging if the selected orientation is closer to the estimated orientation than an error threshold 
