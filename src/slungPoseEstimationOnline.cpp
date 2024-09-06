@@ -9,9 +9,6 @@
 
 SlungPoseEstimationOnline::SlungPoseEstimationOnline() : Node("slung_pose_estimation", rclcpp::NodeOptions().use_global_arguments(true)) {
     // PARAMETERS
-    // this->ns_ = this->get_namespace();
-    // this->drone_id_ = utils::extract_id_from_name(this->ns_);
-
     this->declare_parameter<std::string>("env", "phys");
     this->get_parameter("env", this->env_);
 
@@ -40,12 +37,6 @@ SlungPoseEstimationOnline::SlungPoseEstimationOnline() : Node("slung_pose_estima
 
     std::stringstream ss;
     ss << std::put_time(std::localtime(&init_time), "%Y_%m_%d_%H_%M_%S_"); // Format the time
-
-    // Set the logging file path
-    // std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
-    // std::string filename = "measurement_drone" + std::to_string(this->drone_id_) + ".txt";
-    // std::string filepath = "/data/" + ss.str() + filename; // Prepend the formatted time to the filename
-    // this->logging_file_path_ = package_share_directory + filepath;
  
     // VARIABLES
     this->tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
@@ -60,37 +51,6 @@ SlungPoseEstimationOnline::SlungPoseEstimationOnline() : Node("slung_pose_estima
 
     this->marker_pose_measurements_.resize(this->num_drones_);
     this->state_current_estimate_ = droneState::State("world", droneState::CS_type::ENU);
-
-    // this->drone_phases_.resize(this->num_drones_);
-    // this->sub_phase_drones_.resize(this->num_drones_);
-    
-    // Flags
-    // this->flag_in_mission_phase_ = false;
-    // this->flag_expected_pose_measurement_set_ = false;
-
-    // ROS2
-    //rclcpp::QoS qos_profile_drone_system = rclcpp::SensorDataQoS();
-
-    // SUBSCRIBERS
-    // Loop to create subscriptions for multiple drones 
-    // for (int i = this->first_drone_num_; i < this->num_drones_ + this->first_drone_num_; ++i) {
-    //     int drone_index = i - this->first_drone_num_;
-    //     auto topic_name = "/px4_" + std::to_string(i) + "/out/current_phase";
-
-    //     // Create subscription and bind it with a lambda
-    //     this->sub_phase_drones_[drone_index] = this->create_subscription<multi_drone_slung_load_interfaces::msg::Phase>(
-    //         topic_name,
-    //         qos_profile_drone_system,
-    //         [this, drone_index](const multi_drone_slung_load_interfaces::msg::Phase::SharedPtr msg) {
-    //             this->clbk_update_drone_phase(msg, drone_index);
-    //         }
-    //     );
-    // }
-
-    // PUBLISHERS
-    // this->pub_marker_rel_camera_ = this->create_publisher<geometry_msgs::msg::Pose>
-    //     this->ns_ + "/out/marker_rel_camera", qos_profile_drone_system);
-
 
     // SETUP
     this->start_time_ = this->get_clock()->now();

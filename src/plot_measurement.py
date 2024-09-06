@@ -294,13 +294,13 @@ def main():
 
     #num_drones = 1
     #start_drone_num = 1
-    plot_data_for = [1, 2, 3] #, 2, 3] #[1, 2, 3] # Drones to plot data for
+    plot_data_for = [1] #, 2, 3] #[1, 2, 3] # Drones to plot data for
     start_drone_num = min(plot_data_for)
     num_drones = len(plot_data_for)
 
     # Retrieve data from log file
-    path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename_common = path + '2024_09_05_19_54_54_measurement_drone' #'20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
+    path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/ws_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
+    filename_common = path + '2024_09_05_19_54_54_measurement_drone' # replace with your log file path
     only_plot_mission_phase = True
 
     # Store data from all drones
@@ -354,18 +354,6 @@ def main():
         print(f'Mean geodesic attitude measurement error from ground truth: {np.mean(distAngGeo[i])} deg')
         print(f'Mean geodesic attitude distance of quasi-static from ground truth: {np.mean(distAngGeoQs[i])} deg')
 
-    # Single drone
-    #time, pos_gt, rpy_gt, pos, rpy, pos_err, att_err, distTrans, distAngGeo, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world = read_log_file(filename)
-    
-    # Process data
-    #time, rpy_gt, rpy, att_err = process_data(time, rpy_gt, rpy)
-
-    # Plot
-    # plot_data(time, pos_gt, rpy_gt, pos, rpy, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size) #, pos_err, att_err, distTrans, distAngGeo)
-    # plot_errors(time, pos_err, att_err, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-    #plot_trans_geo(time, distTrans, distAngGeo, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-    # plot_trajectory(time, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world, 
-    #                title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
 if __name__ == '__main__':
     main()

@@ -9,7 +9,6 @@
 
 #include <chrono> // Include for std::chrono
 #include <iomanip> // Include for std::put_time
-//#include <Eigen/Dense>
 
 SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp::NodeOptions().use_global_arguments(true)) {
     // PARAMETERS
@@ -68,7 +67,6 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
 
     // Set the logging file path
     std::string package_share_directory = ament_index_cpp::get_package_share_directory("slung_pose_estimation");
-    //std::string filepath = "/data/measurement_drone" + std::to_string(this->drone_id_) + ".txt";
     std::string filename = "measurement_drone" + std::to_string(this->drone_id_) + ".txt";
     std::string filepath = "/data/" + ss.str() + filename; // Prepend the formatted time to the filename
     this->logging_file_path_ = package_share_directory + filepath;
@@ -88,8 +86,6 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->tf_static_broadcaster_marker_rel_load_est_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
 
     // Flags
-    // this->flag_in_mission_phase_ = false;
-    // this->flag_expected_pose_measurement_set_ = false;
 
     // ROS2
     rclcpp::QoS qos_profile_cam = rclcpp::SensorDataQoS();
@@ -309,7 +305,6 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
     }
 
     // Loop through possible solutions, comparing to expected solution
-    //cv::Vec3d bestRvec, bestTvec;
     cv::Vec3d rvec, tvec;
     double reprojErrorSelected; 
     double minError = std::numeric_limits<double>::max(); // Initialize with a large number
@@ -338,20 +333,16 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
 
     // If the selected solution does not have a small enough reprojection error, reject the measurement
     // TODO: perhaps also unset the prior? or at least have some way of flicking back to the other solution? Flicking is reduced with "estimator"
-    
     if (reprojErrorSelected > this->pnp_reprojection_threshold_){
         RCLCPP_INFO(this->get_logger(), "Reprojection error of measurement too high at %.2f - rejected.", reprojErrorSelected);
         return false;
     }
-
-    //RCLCPP_INFO(this->get_logger(), "Reprojection error: %.2f", reprojErrorSelected);
  
     // Always broadcast the measured pose (so the estimator can choose whether or not to accept it)
     // Broadcast measured pose relative to camera coordinate system (may introduce errors from current drone pose error when looking up)
     Eigen::Vector3d t_marker_rel_cam_measured = Eigen::Vector3d(tvec[0], tvec[1], tvec[2]); //(t_marker_rel_load[0], t_marker_rel_load[1], t_marker_rel_load[2]);
 
     tf2::Quaternion tf2_quaternion = utils::convert_rvec_to_quaternion(rvec);
-    // Eigen::Vector3d R_marker_rel_cam_measured_eig = Eigen::Vector3d(rvec[0], rvec[1], rvec[2]);
     Eigen::Quaterniond R_marker_rel_cam_measured_q = Eigen::Quaterniond(tf2_quaternion.w(), tf2_quaternion.x(), tf2_quaternion.y(), tf2_quaternion.z()); // frame_transforms::utils::quaternion::quaternion_from_euler(R_marker_rel_cam_measured_eig);
 
     utils::broadcast_tf(this->get_clock()->now(),
@@ -372,20 +363,6 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
 
         cv::imshow("Detected Markers Drone " + std::to_string(this->drone_id_), outputImage);
         cv::waitKey(30);
-
-        // PRINTING FOR DEBUGGING
-        //Print the measured pose
-        // double yaw_meas, pitch_meas, roll_meas;
-        // this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
-
-        // yaw_meas = yaw_meas * 180.0 / M_PI;
-        // pitch_meas = pitch_meas * 180.0 / M_PI;
-        // roll_meas = roll_meas * 180.0 / M_PI;
-
-        // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam measured: %f %f %f %f %f %f",
-        //             this->state_marker_rel_camera_.getPos()[0], this->state_marker_rel_camera_.getPos()[1], this->state_marker_rel_camera_.getPos()[2],
-        //             roll_meas, pitch_meas, yaw_meas);
-
     }
 
     return true;
@@ -427,19 +404,6 @@ void SlungPoseMeasurement::evaluate_pose_measurement(){
         // Save the PnP error data to a file
         this->log_pnp_error(this->logging_file_path_, state_marker_rel_cam_gt, this->state_marker_rel_camera_, state_marker_rel_cam_qs, state_drone_rel_world, state_load_rel_world);
 
-        // PRINTING FOR DEBUGGING
-        // Print ground truth
-        // double yaw_gt, pitch_gt, roll_gt;
-        // state_marker_rel_cam_gt.getAttYPR(yaw_gt, pitch_gt, roll_gt);
-
-        // yaw_gt = yaw_gt * 180.0 / M_PI;
-        // pitch_gt = pitch_gt * 180.0 / M_PI;
-        // roll_gt = roll_gt * 180.0 / M_PI;
-
-        // RCLCPP_INFO(this->get_logger(), "Marker pose rel cam ground truth: %f %f %f %f %f %f",
-        //             state_marker_rel_cam_gt.getPos()[0], state_marker_rel_cam_gt.getPos()[1], state_marker_rel_cam_gt.getPos()[2],
-        //             roll_gt, pitch_gt, yaw_gt);
-
         // Print the measured pose
         double yaw_meas, pitch_meas, roll_meas;
         this->state_marker_rel_camera_.getAttYPR(yaw_meas, pitch_meas, roll_meas);
@@ -465,9 +429,6 @@ void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const dron
 
     // Add a blank line at the start and end of the mission phase
     if((drones_in_mission_phase && !this->flag_in_mission_phase_) || (!drones_in_mission_phase && this->flag_in_mission_phase_)){       
-        // std::ofstream logFile;
-        // logFile.open(this->logging_file_path_, std::ios::app);
-
         if (logFile.is_open()) {
             // Log load poses
             logFile << std::endl;
@@ -525,15 +486,6 @@ void SlungPoseMeasurement::log_pnp_error(const std::string &filename, const dron
                 << rpy_drone_rel_world.x() << " " << rpy_drone_rel_world.y() << " " << rpy_drone_rel_world.z() << " "
                 << pos_load_rel_world.x() << " " << pos_load_rel_world.y() << " " << pos_load_rel_world.z() << " "
                 << rpy_load_rel_world.x() << " " << rpy_load_rel_world.y() << " " << rpy_load_rel_world.z() << std::endl;
-
-        // Loop through each drone's ground truth state and log their positions
-        // for (const auto &drone_rel_world : states_drones_rel_world)
-        // {
-        //     Eigen::Vector3d drone_pos_gt = drone_rel_world.getPos();
-        //     Eigen::Vector3d drone_rpy_gt = drone_rel_world.getAttYPR();
-        //     logFile << drone_pos_gt.x() << " " << drone_pos_gt.y() << " " << drone_pos_gt.z() << " ";
-        //     logFile << drone_rpy_gt.x() << " " << drone_rpy_gt.y() << " " << drone_rpy_gt.z() << " ";
-        // }
 
         logFile.close();
     }else {
