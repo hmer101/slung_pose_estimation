@@ -36,6 +36,8 @@ private:
 
     std::string env_;
     bool evaluate_;           // Whether to evaluate the pose estimation vs ground truth
+    bool use_load_pose_estimator_;
+    float pnp_reprojection_threshold_;
     int show_markers_config_; // 0 = No, 1 = Yes all, 2 = Drone 1 only
     float marker_edge_length_;
     rclcpp::Time start_time_;

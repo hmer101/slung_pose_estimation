@@ -292,14 +292,16 @@ def main():
     legend_font_size = 12
     ticks_font_size = 10
 
-    num_drones = 2
-    start_drone_num = 2
-    plot_data_for = [2, 3] #, 2, 3] #[1, 2, 3] # Drones to plot data for
+    #num_drones = 1
+    #start_drone_num = 1
+    plot_data_for = [1, 2, 3] #, 2, 3] #[1, 2, 3] # Drones to plot data for
+    start_drone_num = min(plot_data_for)
+    num_drones = len(plot_data_for)
 
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename_common = path + '2024_09_05_15_02_06_measurement_drone' #'20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
-    only_plot_mission_phase = False
+    filename_common = path + '2024_09_05_19_54_54_measurement_drone' #'20240530_drone' #'2024_06_03_15_59_15_measurement_drone' #'20240530_drone'  # replace with your log file path
+    only_plot_mission_phase = True
 
     # Store data from all drones
     time = [None]*num_drones # Get starting times from all drones to align the data

@@ -88,7 +88,7 @@ SlungPoseEstimationOnline::SlungPoseEstimationOnline() : Node("slung_pose_estima
     // }
 
     // PUBLISHERS
-    // this->pub_marker_rel_camera_ = this->create_publisher<geometry_msgs::msg::Pose>(
+    // this->pub_marker_rel_camera_ = this->create_publisher<geometry_msgs::msg::Pose>
     //     this->ns_ + "/out/marker_rel_camera", qos_profile_drone_system);
 
 
@@ -102,38 +102,21 @@ SlungPoseEstimationOnline::SlungPoseEstimationOnline() : Node("slung_pose_estima
 
 void SlungPoseEstimationOnline::clbk_estimation(){
     // Store best and most recent measurements to use as the estimated load pose
-    // TODO: Check that max time initialization is feasible
     int best_ind = -1;
-    //float best_err = std::numeric_limits<float>::infinity();
+    float best_err = std::numeric_limits<float>::infinity();
     rclcpp::Duration best_time_elapsed = rclcpp::Duration(std::numeric_limits<int32_t>::max(), 999999999);
-    // rclcpp::Time(std::numeric_limits<int32_t>::max() / 1e9, // seconds
-    //                                               std::numeric_limits<int32_t>::max() % static_cast<int32_t>(1e9),
-    //                                               this->get_clock()->get_clock_type());
 
-    int most_recent_ind = -1;
+    //int most_recent_ind = -1;
     float most_recent_err = std::numeric_limits<float>::infinity();
     rclcpp::Duration most_recent_time_elapsed = rclcpp::Duration(std::numeric_limits<int32_t>::max(), 999999999);
-    // rclcpp::Time(std::numeric_limits<int64_t>::max() / 1e9, // seconds
-    //                                               std::numeric_limits<int64_t>::max() % static_cast<int64_t>(1e9),
-    //                                               this->get_clock()->get_clock_type());
+
+    int smallest_err_ind = -1;
+    float smallest_err = std::numeric_limits<float>::infinity();
+    rclcpp::Duration smallest_err_time_elapsed = rclcpp::Duration(std::numeric_limits<int32_t>::max(), 999999999);
 
     // Lookup the latest measurements from each camera
     for (int i = 0; i < this->num_drones_; ++i){
         this->marker_pose_measurements_[i] = utils::lookup_tf("world", "load_marker" + std::to_string(this->load_id_) + "_measured" + std::to_string(i+this->first_drone_num_), *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
-        
-        // std::optional<geometry_msgs::msg::TransformStamped> = this->marker_pose_measurements_[i];
-        
-        // auto& optional_transform = marker_pose_measurements_[i];
-    
-        // if (optional_transform.has_value()) {
-        //     // Element exists; access the value
-        //     geometry_msgs::msg::TransformStamped transform = optional_transform.value();
-        //     // Or use: geometry_msgs::msg::TransformStamped transform = *optional_transform;
-            
-        //     // Do something with 'transform'
-        // } else {
-        //     // Handle the case where the optional is empty
-        // }
         
         // Skip this iteration if the lookup cannot be found
         if(!this->marker_pose_measurements_[i]){
@@ -141,7 +124,7 @@ void SlungPoseEstimationOnline::clbk_estimation(){
             continue;
         }
         
-        // Select the most recent measurement that is within the error bounds
+        // Select the measurement with the least error that is within the time bounds // Select the most recent measurement that is within the error bounds
         geometry_msgs::msg::TransformStamped marker_pose_measurement_i = this->marker_pose_measurements_[i].value();  // optional_transform.value();
         droneState::State state_measured_i = utils::convert_tf_stamped_msg_to_state(marker_pose_measurement_i, "world", droneState::CS_type::ENU);
         
@@ -152,34 +135,65 @@ void SlungPoseEstimationOnline::clbk_estimation(){
             err_ang = state_measured_i.distAngGeo(this->state_current_estimate_)*180.0 / M_PI;
         }
 
-        // Check if another measurement so far has been valid, and if this one is more recent
+        // Update most recent (and perhaps best)
         if(best_ind == -1 || time_elapsed < best_time_elapsed){
             // A valid measurement to update the pose estimate
-            if(time_elapsed.seconds() < this->est_threshold_time_ && err_ang < this->est_threshold_ang_dist_){
-                best_ind = i;
-                //best_err = err_ang;
-                best_time_elapsed = time_elapsed;    
-            }
+            // if(time_elapsed.seconds() < this->est_threshold_time_ && err_ang < this->est_threshold_ang_dist_){
+            //     best_ind = i;
+            //     //best_err = err_ang;
+            //     best_time_elapsed = time_elapsed;    
+            // }
             
             // Measurement may or may not be valid, but it is the most recent (store as backup)
             if(time_elapsed < most_recent_time_elapsed){ 
-                most_recent_ind = i;
+                //most_recent_ind = i;
                 most_recent_err = err_ang;
                 most_recent_time_elapsed = time_elapsed;
             }
         }
+
+        // Update smallest error (and perhaps best)
+        if(best_ind == -1 || err_ang < best_err){
+            // A valid measurement to update the pose estimate
+            if(time_elapsed.seconds() < this->est_threshold_time_ && err_ang < this->est_threshold_ang_dist_){
+                best_ind = i;
+                best_err = err_ang;
+                best_time_elapsed = time_elapsed;    
+            }
+            
+            // Measurement may or may not be valid, but it has the smallest error (store as backup)
+            if(err_ang < smallest_err){ 
+                smallest_err_ind = i;
+                smallest_err = err_ang;
+                smallest_err_time_elapsed = time_elapsed;
+            }
+        }
         
     }
-    // All measurements are too old or too far from the previous; select the most recent if available
+    // All measurements are too old or too far from the previous; select the smallest error or most recent if available
+    // Most recent
+    // if(best_ind == -1){
+    //     if(most_recent_ind == -1){ // No measurements are found
+    //         RCLCPP_INFO(this->get_logger(), "No load measurements are available.");
+    //         return;
+    //     }
+    //     else
+    //     {
+    //         best_ind = most_recent_ind; //most_recent_ind;
+    //         RCLCPP_WARN(this->get_logger(), "Measurements exceed thresholds. Selecting the most recent with err_ang: %.2f, time_elapsed: %.2f.", most_recent_err, most_recent_time_elapsed.seconds());
+    //     }
+    // }
+
+    // Smallest error
     if(best_ind == -1){
-        if(most_recent_ind == -1){ // No measurements are found
+        if(smallest_err_ind == -1){ // No measurements are found
             RCLCPP_INFO(this->get_logger(), "No load measurements are available.");
             return;
         }
         else
         {
-            best_ind = most_recent_ind;
-            RCLCPP_WARN(this->get_logger(), "Measurements exceed thresholds. Selecting the most recent with err_ang: %.2f, time_elapsed: %.2f.", most_recent_err, most_recent_time_elapsed.seconds());
+            best_ind = smallest_err_ind; //most_recent_ind;
+            RCLCPP_WARN(this->get_logger(), "Measurements exceed thresholds. Selecting the smallest error measurement with err_ang: %.2f, time_elapsed: %.2f.", most_recent_err, most_recent_time_elapsed.seconds());
         }
     }
 

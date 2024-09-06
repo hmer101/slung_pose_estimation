@@ -34,6 +34,12 @@ SlungPoseMeasurement::SlungPoseMeasurement() : Node("slung_pose_measure", rclcpp
     this->declare_parameter<bool>("evaluate", false);
     this->get_parameter("evaluate", this->evaluate_);
 
+    this->declare_parameter<bool>("use_load_pose_estimator", false);
+    this->get_parameter("use_load_pose_estimator", this->use_load_pose_estimator_);
+
+    this->declare_parameter<float>("pnp_reprojection_threshold", 5.0);
+    this->get_parameter("pnp_reprojection_threshold", this->pnp_reprojection_threshold_);
+
     this->declare_parameter<int>("load_id", 1);
     this->get_parameter("load_id", this->load_id_);
 
@@ -196,8 +202,6 @@ void SlungPoseMeasurement::clbk_image_received(const sensor_msgs::msg::Image::Sh
         // ESTIMATE MARKER POSE
         bool poseEstimated = this->measure_marker_pose(targetCorners, outputImage);
 
-
-
         // EVALUATE MARKER POSE
         if (poseEstimated && this->evaluate_) {
             this->evaluate_pose_measurement();
@@ -252,23 +256,11 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
     //cv::Vec3d rvec, tvec;
     //cv::solvePnP(markerPoints, targetCorners, this->cam_K_, distCoeffs, rvec, tvec, false, cv::SOLVEPNP_IPPE_SQUARE); //cv::SOLVEPNP_P3P cv::SOLVEPNP_IPPE_SQUARE // cv::SOLVEPNP_ITERATIVE 
     
-
-
-    //std::vector<cv::Mat> rvecs, tvecs;
     std::vector<cv::Vec3d> rvecs, tvecs;
     cv::Mat reprojErr;
 
     // Solve PnP
     cv::solvePnPGeneric(markerPoints, targetCorners, this->cam_K_, distCoeffs, rvecs, tvecs, false, cv::SOLVEPNP_IPPE_SQUARE, cv::noArray(), cv::noArray(), reprojErr); // For initializing iterative solver, use rvec = noArray(), tvec = noArray().
-
-    // Check the reprojection error ratio (closer to 1 means more ambiguous)
-    // if (!reprojErr.empty()) {
-    //     double reprojErrorSol0 = reprojErr.at<double>(0); //.getMatRef()
-    //     double reprojErrorSol1 = reprojErr.at<double>(1); //.getMatRef()
-
-    //     double errRatio = reprojErrorSol0 / reprojErrorSol1;
-    //     //RCLCPP_INFO(this->get_logger(), "Reprojection error ratio: %.2f", errRatio);
-    // }
 
     // Select solution that best fits priors and temporal filtering
     // Find expected orientation. In takeoff, this is defined, otherwise, use previous
@@ -276,10 +268,7 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
         return phase_msg.phase == multi_drone_slung_load_interfaces::msg::Phase::PHASE_TAKEOFF_PRE_TENSION; 
     });
 
-
-
-    //float distAngGeo = state_marker_rel_cam.distAngGeo(state_marker_rel_cam_gt)*180.0 / M_PI;   
-
+    // Decide which priors to use
     if(drones_in_formation){ // In a phase where the expected formation is known
         // Find the expected measurement
         auto expectedPose = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_d","load_marker" + std::to_string(this->load_id_) + "_d", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
@@ -298,27 +287,31 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
         RCLCPP_INFO(this->get_logger(), "No prior load pose has yet been set.");
         return false; // No priors can be used to disambiguate. Could just select the minimum error, safer to skip.
     }
-    // }else // Initial measurements have been taken in the formation phase, can now use estimated load as prior
-    // {
-    //     // Look up expected load pose from estimator
+    else if (this->use_load_pose_estimator_)// Initial measurements have been taken in the formation phase, can now use estimated load as prior
+    {
+        // Look up expected measurement from estimator
+        auto load_marker_rel_world_e = utils::lookup_tf("camera" + std::to_string(this->drone_id_) + "_gt", "load_marker" + std::to_string(this->load_id_) + "_e", *this->tf_buffer_, rclcpp::Time(0), this->get_logger());
 
+        if(!load_marker_rel_world_e){
+            // No priors can be used to disambiguate. Could just select the minimum error, safer to skip.
+            RCLCPP_INFO(this->get_logger(), "Estimator is yet to produce a result.");
+            return false; 
+        }
 
-    //     RCLCPP_INFO(this->get_logger(), "Estimator is yet to produce a result.");
-    //     return false; // No priors can be used to disambiguate. Could just select the minimum error, safer to skip.
-
-    //     // Transform into this camera's frame
-
-    //     // Set the expected pose measurement
-        
-    //     this->state_expected_pose_measurement_.setPos(Eigen::Vector3d(expectedPose->transform.translation.x, ->transform.translation.y, expectedPose->transform.translation.z));
-    //     this->state_expected_pose_measurement_.setAtt(tf2::Quaternion(expectedPose->transform.rotation.x, ->transform.rotation.y, expectedPose->transform.rotation.z, expectedPose->transform.rotation.w));
-
-        
-    // }
+        // Set the expected pose measurement
+        this->state_expected_pose_measurement_.setPos(Eigen::Vector3d(load_marker_rel_world_e->transform.translation.x, load_marker_rel_world_e->transform.translation.y, load_marker_rel_world_e->transform.translation.z));
+        this->state_expected_pose_measurement_.setAtt(tf2::Quaternion(load_marker_rel_world_e->transform.rotation.x, load_marker_rel_world_e->transform.rotation.y, load_marker_rel_world_e->transform.rotation.z, load_marker_rel_world_e->transform.rotation.w));
+    }
+    else // No previous methods have been selected to provide a prior marker pose guess; use the previous measured marker pose
+    {
+        this->state_expected_pose_measurement_.setPos(this->state_marker_rel_camera_.getPos());
+        this->state_expected_pose_measurement_.setAtt(this->state_marker_rel_camera_.getAtt());
+    }
 
     // Loop through possible solutions, comparing to expected solution
     //cv::Vec3d bestRvec, bestTvec;
     cv::Vec3d rvec, tvec;
+    double reprojErrorSelected; 
     double minError = std::numeric_limits<double>::max(); // Initialize with a large number
 
     for (size_t i = 0; i < rvecs.size(); ++i) {
@@ -337,16 +330,22 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
         // Update the best solution
         if (currentError < minError) {
             minError = currentError;
+            reprojErrorSelected = reprojErr.at<double>(i);
             rvec = rvecMat;
             tvec = tvecMat;
         }
     }
 
     // If the selected solution does not have a small enough reprojection error, reject the measurement
-    // (perhaps also unset the prior? or at least have some way of flicking back to the other solution?)
+    // TODO: perhaps also unset the prior? or at least have some way of flicking back to the other solution? Flicking is reduced with "estimator"
+    
+    if (reprojErrorSelected > this->pnp_reprojection_threshold_){
+        RCLCPP_INFO(this->get_logger(), "Reprojection error of measurement too high at %.2f - rejected.", reprojErrorSelected);
+        return false;
+    }
 
-
-
+    //RCLCPP_INFO(this->get_logger(), "Reprojection error: %.2f", reprojErrorSelected);
+ 
     // Always broadcast the measured pose (so the estimator can choose whether or not to accept it)
     // Broadcast measured pose relative to camera coordinate system (may introduce errors from current drone pose error when looking up)
     Eigen::Vector3d t_marker_rel_cam_measured = Eigen::Vector3d(tvec[0], tvec[1], tvec[2]); //(t_marker_rel_load[0], t_marker_rel_load[1], t_marker_rel_load[2]);
@@ -356,34 +355,15 @@ bool SlungPoseMeasurement::measure_marker_pose(const std::vector<cv::Point2f>& t
     Eigen::Quaterniond R_marker_rel_cam_measured_q = Eigen::Quaterniond(tf2_quaternion.w(), tf2_quaternion.x(), tf2_quaternion.y(), tf2_quaternion.z()); // frame_transforms::utils::quaternion::quaternion_from_euler(R_marker_rel_cam_measured_eig);
 
     utils::broadcast_tf(this->get_clock()->now(),
-                        "camera" + std::to_string(this->drone_id_) + "_gt", //+ "_gt"
+                        "camera" + std::to_string(this->drone_id_), //+ "_gt"
                         "load_marker" + std::to_string(this->load_id_) + "_measured" + std::to_string(this->drone_id_),
                         t_marker_rel_cam_measured,
                         R_marker_rel_cam_measured_q,
                         *this->tf_broadcaster_);
 
-    
-    // Only update the pose for logging if the selected orientation is closer to the estimated orientation than an error threshold 
-    // or the estimated pose has not yet been set
-
-
-
-
     // Mutate standard containers accessible for later logging
     this->state_marker_rel_camera_.setAtt(utils::convert_rvec_to_quaternion(rvec));
     this->state_marker_rel_camera_.setPos(Eigen::Vector3d(tvec[0], tvec[1], tvec[2]));
-
-    // Update expected state to the newly measured one
-    // this->state_expected_pose_measurement_.setPos(this->state_marker_rel_camera_.getPos());
-    // this->state_expected_pose_measurement_.setAtt(this->state_marker_rel_camera_.getAtt());
-
-    // Update the expected state to the one published by the state estimator
-    this->state_expected_pose_measurement_.setPos(this->state_marker_rel_camera_.getPos());
-    this->state_expected_pose_measurement_.setAtt(this->state_marker_rel_camera_.getAtt());
-
-
-
-
 
     // Display the image with detected markers if desired, and marker pose is selected
     if (this->show_markers_config_ == 1 || (this->show_markers_config_ == 2 && this->drone_id_ == 1)){
