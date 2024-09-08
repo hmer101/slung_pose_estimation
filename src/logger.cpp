@@ -26,6 +26,10 @@ Logger::Logger() : Node("logger", rclcpp::NodeOptions().use_global_arguments(tru
     this->declare_parameter<int>("first_drone_num_", 1);
     this->get_parameter("first_drone_num_", this->first_drone_num_);
 
+    float timer_period_logger;
+    this->declare_parameter<double>("timer_period_logger", 0.1);
+    this->get_parameter("timer_period_logger", timer_period_logger);
+
     // Get the current time
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
@@ -43,7 +47,8 @@ Logger::Logger() : Node("logger", rclcpp::NodeOptions().use_global_arguments(tru
     this->states_drones_rel_world_gt.resize(this->num_drones_);
     this->states_drones_rel_world_desired.resize(this->num_drones_);
 
-    this->timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&Logger::clbk_timer, this)); //100ms
+    int logger_timer_period_ms = static_cast<int>(timer_period_logger * 1000); 
+    this->timer_ = this->create_wall_timer(std::chrono::milliseconds(logger_timer_period_ms), std::bind(&Logger::clbk_timer, this)); //100ms
 
     this->tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock()); //tf2_ros::Buffer(std::make_shared<rclcpp::Clock>());
     this->tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*(this->tf_buffer_));
