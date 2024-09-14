@@ -167,7 +167,7 @@ def plot_errors(time, pos_err, att_err, pos_err_qs, att_err_qs, title_font_size,
 
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Orientation Error (Degrees)', fontsize=axes_label_font_size)
-    plt.title('Measurement Orientation Error Over Time', fontsize=title_font_size)
+    #plt.title('Measurement Orientation Error Over Time', fontsize=title_font_size)
     plt.legend(fontsize=legend_font_size)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
@@ -175,30 +175,48 @@ def plot_errors(time, pos_err, att_err, pos_err_qs, att_err_qs, title_font_size,
     plt.tight_layout()
     plt.show()
 
-def plot_trans_geo(time, distTrans, distAngGeo, distTransQs, distAngGeoQs, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
+def plot_trans_geo(time, distTrans, distAngGeo, distTransQs, distAngGeoQs, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size, x_ticks=None, y_ticks_1=None, y_ticks_2=None):
     plt.figure(figsize=(10, 5))
 
     # distTrans
     plt.subplot(2, 1, 1)
-    plt.plot(time, distTrans, color='red') #label='distTrans',
-    plt.plot(time, distTransQs, linestyle='dotted', color='red')
-    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-    plt.ylabel('Translation Distance (m)', fontsize=axes_label_font_size)
-    plt.title('Distance Measurement Error Magnitude Over Time', fontsize=title_font_size)
-    plt.legend(fontsize=legend_font_size)
+    plt.plot(time, distTrans*1000, label='Measured', color='red') #label='distTrans',
+    plt.plot(time, distTransQs*1000, label='Quasi-static', linestyle='dotted', color='red')
+    #plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Translation \n Distance (mm)', fontsize=axes_label_font_size)
+    #plt.title('Distance Measurement Error Magnitude Over Time', fontsize=title_font_size)
+    plt.text(0.0, 1.05, 'a)', transform=plt.gca().transAxes, fontsize=title_font_size, fontweight='bold')
+    plt.legend(fontsize=legend_font_size, loc='upper right',)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
 
+    if x_ticks is not None:
+        plt.xticks(x_ticks)
+        plt.xlim(x_ticks[0], x_ticks[-1])
+    
+    if y_ticks_1 is not None:
+        plt.yticks(y_ticks_1)
+        plt.ylim(y_ticks_1[0], y_ticks_1[-1])
+
     # distAngGeo
     plt.subplot(2, 1, 2)
-    plt.plot(time, distAngGeo, color='red') #label='distAngGeo',
-    plt.plot(time, distAngGeoQs, linestyle='dotted', color='red')
+    plt.plot(time, distAngGeo, label='Measured', color='red') #label='distAngGeo',
+    plt.plot(time, distAngGeoQs, label='Quasi-static', linestyle='dotted', color='red')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-    plt.ylabel('Geodesic Distance (Degrees)', fontsize=axes_label_font_size)
-    plt.title('Geodesic Distance Attitude Measurement Error Over Time', fontsize=title_font_size)
-    plt.legend(fontsize=legend_font_size)
+    plt.ylabel('Geodesic Distance \n (Degrees)', fontsize=axes_label_font_size)
+    #plt.title('Geodesic Distance Attitude Measurement Error Over Time', fontsize=title_font_size)
+    plt.text(0.0, 1.05, 'b)', transform=plt.gca().transAxes, fontsize=title_font_size, fontweight='bold')
+    plt.legend(fontsize=legend_font_size, loc='upper right',)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
+
+    if x_ticks is not None:
+        plt.xticks(x_ticks)
+        plt.xlim(x_ticks[0], x_ticks[-1])
+    
+    if y_ticks_2 is not None:
+        plt.yticks(y_ticks_2)
+        plt.ylim(y_ticks_2[0], y_ticks_2[-1])
 
     plt.tight_layout()
     plt.show()
@@ -288,9 +306,13 @@ def process_data(time, rpy_gt, rpy, rpy_qs):
 def main():
     # Set parameters
     title_font_size = 16
-    axes_label_font_size = 14
-    legend_font_size = 12
-    ticks_font_size = 10
+    axes_label_font_size = 16
+    legend_font_size = 16
+    ticks_font_size = 16
+
+    x_ticks=np.arange(0, 85, 5)
+    y_ticks_trans=np.arange(0, 400, 50) #np.arange(0, 0.40, 0.05) #None #np.arange(0, 80, 5)
+    y_ticks_geo=np.arange(0, 15, 2)
 
     #num_drones = 1
     #start_drone_num = 1
@@ -300,7 +322,7 @@ def main():
 
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/ws_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename_common = path + '2024_09_05_19_54_54_measurement_drone' # replace with your log file path
+    filename_common = path + 'sim_filter_2024_09_05_19_54_54_measurement_drone' # replace with your log file path
     only_plot_mission_phase = True
 
     # Store data from all drones
@@ -338,9 +360,9 @@ def main():
     for i in plot_drone_indicies:
         time[i] = time[i] - time_start
         rpy_gt_proc, rpy_proc, rpy_qs_proc, att_err_proc, att_err_qs_proc = process_data(time[i], rpy_gt[i], rpy[i], rpy_marker_rel_cam_qs[i])
-        plot_data(time[i], pos_gt[i], rpy_gt_proc, pos[i], rpy_proc, pos_marker_rel_cam_qs[i], rpy_qs_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-        plot_errors(time[i], pos_err[i], att_err_proc, pos_err_qs[i], att_err_qs_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
-        plot_trans_geo(time[i], distTrans[i], distAngGeo[i], distTransQs[i], distAngGeoQs[i], title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        # plot_data(time[i], pos_gt[i], rpy_gt_proc, pos[i], rpy_proc, pos_marker_rel_cam_qs[i], rpy_qs_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        # plot_errors(time[i], pos_err[i], att_err_proc, pos_err_qs[i], att_err_qs_proc, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+        plot_trans_geo(time[i], distTrans[i], distAngGeo[i], distTransQs[i], distAngGeoQs[i], title_font_size, axes_label_font_size, legend_font_size, ticks_font_size, x_ticks=x_ticks, y_ticks_1=y_ticks_trans, y_ticks_2=y_ticks_geo)
         # plot_trajectory(time[i], pos_drone_rel_world[i], rpy_drone_rel_world[i], pos_load_rel_world[i], rpy_load_rel_world[i], 
         #             title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 

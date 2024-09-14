@@ -83,6 +83,7 @@ add_executable(tester src/tester.cpp)
 add_executable(slung_pose_estimation src/slungPoseEstimation.cpp)
 add_executable(slung_pose_estimation_online src/slungPoseEstimationOnline.cpp)
 add_executable(logger src/logger.cpp)
+add_executable(logger_process_old src/loggerProcessOldRosbags.cpp)
 
 
 # Specify libraries to link a library or executable target against
@@ -122,6 +123,11 @@ target_link_libraries(logger
   #multi_drone_slung_load_interfaces
 )
 
+target_link_libraries(logger_process_old
+  State
+  utils
+  #multi_drone_slung_load_interfaces
+)
 
 ament_target_dependencies(State rclcpp tf2_geometry_msgs tf2 Eigen3)
 ament_target_dependencies(utils rclcpp tf2_ros tf2_eigen Eigen3 std_msgs tf2_geometry_msgs OpenCV)
@@ -129,6 +135,7 @@ ament_target_dependencies(frame_transforms Eigen3 tf2_geometry_msgs sensor_msgs)
 ament_target_dependencies(slung_pose_measurement rclcpp Eigen3 std_msgs sensor_msgs cv_bridge image_transport OpenCV tf2_geometry_msgs multi_drone_slung_load_interfaces)
 ament_target_dependencies(slung_pose_estimation_online rclcpp Eigen3 std_msgs tf2_geometry_msgs multi_drone_slung_load_interfaces)
 ament_target_dependencies(logger rclcpp multi_drone_slung_load_interfaces) #std_msgs tf2_geometry_msgs
+ament_target_dependencies(logger_process_old rclcpp multi_drone_slung_load_interfaces)
 
 
 # if(WITH_PLOTS)
@@ -156,6 +163,7 @@ install(TARGETS
   State
   tester
   logger
+  logger_process_old
   slung_pose_measurement
   slung_pose_estimation
   slung_pose_estimation_online

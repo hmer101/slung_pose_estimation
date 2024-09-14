@@ -218,7 +218,7 @@ def plot_errors(time, pos_err_load, att_err_load, pos_err_drones, att_err_drones
     pos_err_load = list(zip(*pos_err_load))
     plt.plot(time, pos_err_load[0], label='pos_err_load_x', color='red')
     plt.plot(time, pos_err_load[1], label='pos_err_load_y', color='green')
-    plt.plot(time, pos_err_load[2], label='pos_err_load_z', color='blu')
+    plt.plot(time, pos_err_load[2], label='pos_err_load_z', color='blue')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Position Error (m)', fontsize=axes_label_font_size)
     plt.title('Load Position Error', fontsize=title_font_size)
@@ -376,7 +376,7 @@ def main():
     # Read data
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + '2024_09_02_22_06_53_logger1.txt' #'2024_09_02_12_57_29_logger1.txt' #'2024_09_02_12_39_56_logger1.txt' # replace with your log file path
+    filename = path + 'sim_2024_09_05_19_54_53_logger1.txt' #'real_2024_06_05_logger1.txt' 
     only_plot_mission_phase = True
 
 
@@ -385,6 +385,15 @@ def main():
     pos_load_rel_world_qs, rpy_load_rel_world_qs, qs_pos_diff_load, qs_att_diff_load, distTransLoadQs, distAngGeoLoadQs,
     pos_drones_rel_world_desired, rpy_drones_rel_world_desired, pos_drones_rel_world_gt, rpy_drones_rel_world_gt,
     pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones) = read_log_file(filename, only_read_mission=only_plot_mission_phase)
+
+    ## Real world data CS adjustments to match simulation
+    # Adjust the load quasi-static as it is added after the fact so the height of the drones relative to the load is incorrect for real-world data
+    # for pos in pos_load_rel_world_qs:
+    #     pos[2] -= 0.5
+
+    # Align CS of real world and simulation
+    
+
 
     # Plot settings
     title_font_size = 18 #14
@@ -395,19 +404,19 @@ def main():
     # Plot Data
 
     # Plot load data
-    plot_load_data(
-        time, 
-        pos_load_rel_world_gt, 
-        rpy_load_rel_world_gt, 
-        pos_load_rel_world_desired, 
-        rpy_load_rel_world_desired,
-        pos_load_rel_world_qs,
-        rpy_load_rel_world_qs,
-        title_font_size=title_font_size, 
-        axes_label_font_size=axes_label_font_size, 
-        legend_font_size=legend_font_size, 
-        ticks_font_size=ticks_font_size
-    )
+    # plot_load_data(
+    #     time, 
+    #     pos_load_rel_world_gt, 
+    #     rpy_load_rel_world_gt, 
+    #     pos_load_rel_world_desired, 
+    #     rpy_load_rel_world_desired,
+    #     pos_load_rel_world_qs,
+    #     rpy_load_rel_world_qs,
+    #     title_font_size=title_font_size, 
+    #     axes_label_font_size=axes_label_font_size, 
+    #     legend_font_size=legend_font_size, 
+    #     ticks_font_size=ticks_font_size
+    # )
 
     # Plot drones data
     # plot_drones_data(
@@ -424,13 +433,13 @@ def main():
 
     # Plot Errors
     # plot_errors(time, pos_err_load, att_err_load, pos_err_drones, att_err_drones,
-                # title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    #             title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
-    plot_qs_dist(time, qs_pos_diff_load, qs_att_diff_load,
-                title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    # plot_qs_dist(time, qs_pos_diff_load, qs_att_diff_load,
+    #            title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
-    plot_trans_geo_qs_dist(time, distTransLoadQs, distAngGeoLoadQs,
-                   title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    # plot_trans_geo_qs_dist(time, distTransLoadQs, distAngGeoLoadQs,
+    #               title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
     
     # Get conglomorate metrics for distance from quasi-static
     print(f'Mean translational distance from quasi-static: {np.mean(distTransLoadQs)} m')
