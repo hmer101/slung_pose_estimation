@@ -330,28 +330,47 @@ def plot_trans_geo(time, distTransLoad, distAngGeoLoad, distTransDrones, distAng
     plt.show()
 
 def plot_trans_geo_qs_dist(time, distTransLoadQs, distAngGeoLoadQs,
-                   title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
-    plt.figure(figsize=(15, 10))
+                   title_font_size, axes_label_font_size, legend_font_size, ticks_font_size, x_ticks=None, y_ticks_1=None, y_ticks_2=None):
+    #plt.figure(figsize=(15, 10))
+    plt.figure(figsize=(10, 6))
 
     # Translational and Angular Distances
     plt.subplot(2, 1, 1)
-    plt.plot(time, distTransLoadQs, label='distTransLoad', color='blue')
+    plt.plot(time, distTransLoadQs*1000, color='red') #label='distTransLoad',
     #plt.plot(time, distAngGeoLoadQs, label='distAngGeoLoad', color='green')
-    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-    plt.ylabel('Distance (m)', fontsize=axes_label_font_size)
-    plt.title('Translational Distance', fontsize=title_font_size)
-    plt.legend(fontsize=legend_font_size)
+    #plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    plt.ylabel('Distance (mm)', fontsize=axes_label_font_size)
+    #plt.title('Translational Distance', fontsize=title_font_size)
+    plt.text(0.0, 1.05, 'a)', transform=plt.gca().transAxes, fontsize=title_font_size, fontweight='bold')
+    #plt.legend(fontsize=legend_font_size, loc='upper right',)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
 
+    if x_ticks is not None:
+        plt.xticks(x_ticks)
+        plt.xlim(x_ticks[0], x_ticks[-1])
+    
+    if y_ticks_1 is not None:
+        plt.yticks(y_ticks_1)
+        plt.ylim(y_ticks_1[0], y_ticks_1[-1])
+
     plt.subplot(2, 1, 2)
-    plt.plot(time, distAngGeoLoadQs, label='distAngGeoLoad', color='blue')
+    plt.plot(time, distAngGeoLoadQs, color='red') #label='distAngGeoLoad', 
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-    plt.ylabel('Angle Distance (Degrees)', fontsize=axes_label_font_size)
-    plt.title('Angular Distance', fontsize=title_font_size)
-    plt.legend(fontsize=legend_font_size)
+    plt.ylabel('Geodesic Distance \n (degrees)', fontsize=axes_label_font_size)
+    #plt.title('Angular Distance', fontsize=title_font_size)
+    plt.text(0.0, 1.05, 'b)', transform=plt.gca().transAxes, fontsize=title_font_size, fontweight='bold')
+    #plt.legend(fontsize=legend_font_size, loc='upper right',)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
+
+    if x_ticks is not None:
+        plt.xticks(x_ticks)
+        plt.xlim(x_ticks[0], x_ticks[-1])
+    
+    if y_ticks_2 is not None:
+        plt.yticks(y_ticks_2)
+        plt.ylim(y_ticks_2[0], y_ticks_2[-1])
 
     plt.tight_layout()
     plt.show()
@@ -399,8 +418,8 @@ def main():
     # Read data
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    file = 'sim_2024_09_15_10_54_30_logger1.txt' #'sim_2024_09_05_19_54_53_logger1.txt'
-    #file = 'real_2024_06_05_logger1.txt'  #'real_2024_06_05_logger1.txt' 
+    #file = 'sim_2024_09_15_10_54_30_logger1.txt' #'sim_2024_09_05_19_54_53_logger1.txt'
+    file = 'real_2024_06_05_logger1.txt'  #'real_2024_06_05_logger1.txt' 
     filename = path + file
     only_plot_mission_phase = True
     env = file.split('_')[0]
@@ -411,21 +430,20 @@ def main():
     pos_drones_rel_world_desired, rpy_drones_rel_world_desired, pos_drones_rel_world_gt, rpy_drones_rel_world_gt,
     pos_err_drones, att_err_drones, distTransDrones, distAngGeoDrones) = read_log_file(filename, only_read_mission=only_plot_mission_phase)
 
-    ## Real world data CS adjustments to match simulation
-    # Adjust the load quasi-static as it is added after the fact so the height of the drones relative to the load is incorrect for real-world data
-    # if env == 'real':
-    #     for pos in pos_load_rel_world_qs:
-    #         pos[2] -= 0.45
 
-    # Align CS of real world and simulation
-    
-
+    if env == 'real':
+        y_ticks_trans=np.arange(0, 700, 100)
+    elif env == 'sim':
+        y_ticks_trans=np.arange(0, 300, 50)
 
     # Plot settings
-    title_font_size = 18 #14
-    axes_label_font_size = 18 #12
-    legend_font_size = 14 #10
-    ticks_font_size = 18 #10
+    title_font_size = 22 #16
+    axes_label_font_size = 22 #16
+    legend_font_size = 16
+    ticks_font_size = 16
+
+    x_ticks=np.arange(0, 85, 5)
+    y_ticks_geo=np.arange(0, 60, 10)
 
     # Plot Data
 
@@ -461,11 +479,11 @@ def main():
     # plot_errors(time, pos_err_load, att_err_load, pos_err_drones, att_err_drones,
     #             title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
-    plot_qs_dist(time, qs_pos_diff_load, qs_att_diff_load,
-               title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    # plot_qs_dist(time, qs_pos_diff_load, qs_att_diff_load,
+    #            title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
     plot_trans_geo_qs_dist(time, distTransLoadQs, distAngGeoLoadQs,
-                  title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+                  title_font_size, axes_label_font_size, legend_font_size, ticks_font_size, x_ticks=x_ticks, y_ticks_1=y_ticks_trans, y_ticks_2=y_ticks_geo)
     
     # Get conglomorate metrics for distance from quasi-static
     print(f'Mean translational distance from quasi-static: {np.mean(distTransLoadQs)} m')
