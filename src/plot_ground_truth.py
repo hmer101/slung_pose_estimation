@@ -111,7 +111,7 @@ def read_log_file(filename, only_read_mission=False):
 
 
 def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_qs, rpy_load_rel_world_qs,
-                   title_font_size, axes_label_font_size, legend_font_size, ticks_font_size):
+                   title_font_size, axes_label_font_size, legend_font_size, ticks_font_size, x_ticks=None, y_ticks_1=None, y_ticks_2=None):
     plt.figure(figsize=(15, 10))
 
     # Position and Ground Truth Position
@@ -124,20 +124,28 @@ def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_
     plt.plot(time, pos_load_rel_world_gt[1], label='pos_load_gt_y', color='green')
     plt.plot(time, pos_load_rel_world_gt[2], label='pos_load_gt_z', color='blue')
 
-    plt.plot(time, pos_load_rel_world_desired[0], label='pos_load_desired_x', linestyle='dashed', color='red')
-    plt.plot(time, pos_load_rel_world_desired[1], label='pos_load_desired_y', linestyle='dashed', color='green')
-    plt.plot(time, pos_load_rel_world_desired[2], label='pos_load_desired_z', linestyle='dashed', color='blue')
+    # plt.plot(time, pos_load_rel_world_desired[0], label='pos_load_desired_x', linestyle='dashed', color='red')
+    # plt.plot(time, pos_load_rel_world_desired[1], label='pos_load_desired_y', linestyle='dashed', color='green')
+    # plt.plot(time, pos_load_rel_world_desired[2], label='pos_load_desired_z', linestyle='dashed', color='blue')
 
     plt.plot(time, pos_load_rel_world_qs[0], label='pos_load_quasi-static_x', linestyle='dotted', color='red')
     plt.plot(time, pos_load_rel_world_qs[1], label='pos_load_quasi-static_y', linestyle='dotted', color='green')
     plt.plot(time, pos_load_rel_world_qs[2], label='pos_load_quasi-static_z', linestyle='dotted', color='blue')
 
-    plt.xlabel('Time (s)', fontsize=axes_label_font_size)
+    #plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Position (m)', fontsize=axes_label_font_size)
-    plt.title('Load Position - Ground Truth vs Desired', fontsize=title_font_size)
+    #plt.title('Load Position - Ground Truth vs Desired', fontsize=title_font_size)
     plt.legend(fontsize=legend_font_size)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
+
+    if x_ticks is not None:
+        plt.xticks(x_ticks)
+        plt.xlim(x_ticks[0], x_ticks[-1])
+    
+    if y_ticks_1 is not None:
+        plt.yticks(y_ticks_1)
+        plt.ylim(y_ticks_1[0], y_ticks_1[-1])
 
     # RPY and Ground Truth RPY
     plt.subplot(2, 1, 2)
@@ -145,16 +153,31 @@ def plot_load_data(time, pos_load_rel_world_gt, rpy_load_rel_world_gt, pos_load_
     rpy_load_rel_world_desired = np.array(rpy_load_rel_world_desired).T
     rpy_load_rel_world_qs = np.array(rpy_load_rel_world_qs).T
 
-    for i in range(3):
+    for i in range(2):
         plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_gt[i]), label=f'rpy_load_gt_{["roll", "pitch", "yaw"][i]}', color=f'{["red", "green", "blue"][i]}')
-        plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_desired[i]), label=f'rpy_load_desired_{["roll", "pitch", "yaw"][i]}', linestyle='dashed', color=f'{["red", "green", "blue"][i]}')
+        #plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_desired[i]), label=f'rpy_load_desired_{["roll", "pitch", "yaw"][i]}', linestyle='dashed', color=f'{["red", "green", "blue"][i]}')
         plt.plot(time, unwrap_and_convert_to_degrees(rpy_load_rel_world_qs[i]), label=f'rpy_load_quasi-static_{["roll", "pitch", "yaw"][i]}', linestyle='dotted', color=f'{["red", "green", "blue"][i]}')
+    
+    # Don't unwrap yaw to help graphs scale better
+    plt.plot(time, np.degrees(rpy_load_rel_world_gt[2]), label=f'rpy_load_gt_{["roll", "pitch", "yaw"][2]}', color=f'{["red", "green", "blue"][2]}')
+    plt.plot(time, np.degrees(rpy_load_rel_world_qs[2]), label=f'rpy_load_quasi-static_{["roll", "pitch", "yaw"][2]}', linestyle='dotted', color=f'{["red", "green", "blue"][2]}')
+    
+    
+    
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-    plt.ylabel('Orientation (Degrees)', fontsize=axes_label_font_size)
-    plt.title('Load Orientation - Ground Truth vs Desired', fontsize=title_font_size)
+    plt.ylabel('Orientation (degrees)', fontsize=axes_label_font_size)
+    #plt.title('Load Orientation - Ground Truth vs Desired', fontsize=title_font_size)
     plt.legend(fontsize=legend_font_size)
     plt.xticks(fontsize=ticks_font_size)
     plt.yticks(fontsize=ticks_font_size)
+
+    if x_ticks is not None:
+        plt.xticks(x_ticks)
+        plt.xlim(x_ticks[0], x_ticks[-1])
+    
+    if y_ticks_2 is not None:
+        plt.yticks(y_ticks_2)
+        plt.ylim(y_ticks_2[0], y_ticks_2[-1])
 
     plt.tight_layout()
     plt.show()
@@ -250,7 +273,7 @@ def plot_qs_dist(time, qs_pos_diff_load, qs_att_diff_load,
     plt.subplot(2, 1, 1)
     qs_pos_diff_load = list(zip(*qs_pos_diff_load))
     plt.plot(time, qs_pos_diff_load[0], label='qs_pos_diff_load_x', color='red')
-    plt.plot(time, qs_pos_diff_load[1], label='qs_pos_diff_load_Y', color='green')
+    plt.plot(time, qs_pos_diff_load[1], label='qs_pos_diff_load_y', color='green')
     plt.plot(time, qs_pos_diff_load[2], label='qs_pos_diff_load_z', color='blue')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
     plt.ylabel('Position Difference (m)', fontsize=axes_label_font_size)
@@ -376,9 +399,11 @@ def main():
     # Read data
     # Retrieve data from log file
     path = '/home/harvey/ws_ros2/src/slung_pose_estimation/src/' #'/home/harvey/px4_ros_com_ros2/install/slung_pose_estimation/share/slung_pose_estimation/data/'
-    filename = path + 'sim_2024_09_05_19_54_53_logger1.txt' #'real_2024_06_05_logger1.txt' 
+    file = 'sim_2024_09_15_10_54_30_logger1.txt' #'sim_2024_09_05_19_54_53_logger1.txt'
+    #file = 'real_2024_06_05_logger1.txt'  #'real_2024_06_05_logger1.txt' 
+    filename = path + file
     only_plot_mission_phase = True
-
+    env = file.split('_')[0]
 
     (time, pos_load_rel_world_desired, rpy_load_rel_world_desired, pos_load_rel_world_gt, rpy_load_rel_world_gt,
     pos_err_load, att_err_load, distTransLoad, distAngGeoLoad,
@@ -388,8 +413,9 @@ def main():
 
     ## Real world data CS adjustments to match simulation
     # Adjust the load quasi-static as it is added after the fact so the height of the drones relative to the load is incorrect for real-world data
-    # for pos in pos_load_rel_world_qs:
-    #     pos[2] -= 0.5
+    # if env == 'real':
+    #     for pos in pos_load_rel_world_qs:
+    #         pos[2] -= 0.45
 
     # Align CS of real world and simulation
     
@@ -435,11 +461,11 @@ def main():
     # plot_errors(time, pos_err_load, att_err_load, pos_err_drones, att_err_drones,
     #             title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
-    # plot_qs_dist(time, qs_pos_diff_load, qs_att_diff_load,
-    #            title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    plot_qs_dist(time, qs_pos_diff_load, qs_att_diff_load,
+               title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
 
-    # plot_trans_geo_qs_dist(time, distTransLoadQs, distAngGeoLoadQs,
-    #               title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
+    plot_trans_geo_qs_dist(time, distTransLoadQs, distAngGeoLoadQs,
+                  title_font_size, axes_label_font_size, legend_font_size, ticks_font_size)
     
     # Get conglomorate metrics for distance from quasi-static
     print(f'Mean translational distance from quasi-static: {np.mean(distTransLoadQs)} m')
@@ -447,9 +473,9 @@ def main():
     
 
     # Plot trajectories
-    plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired, pos_load_rel_world_qs,
-                                        pos_drones_rel_world_gt, pos_drones_rel_world_desired,
-                                        title_font_size=16, axes_label_font_size=12, legend_font_size=10, ticks_font_size=8)
+    # plot_3d_trajectories(time, pos_load_rel_world_gt, pos_load_rel_world_desired, pos_load_rel_world_qs,
+    #                                     pos_drones_rel_world_gt, pos_drones_rel_world_desired,
+    #                                     title_font_size=16, axes_label_font_size=12, legend_font_size=10, ticks_font_size=8)
     
 
 if __name__ == '__main__':

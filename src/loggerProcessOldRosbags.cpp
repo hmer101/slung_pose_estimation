@@ -150,7 +150,7 @@ void Logger::clbk_timer(){
         this->states_drones_rel_world_desired[i-this->first_drone_num_] = state_drone_rel_world_desired; 
     }
     
-    // !!!!! Calculate the load's state rel world after the fact !!!!!!!
+    // !!!!! Calculate the load's quasi-static state rel world after the fact !!!!!!!
     // Extract drone positions and orientations
     std::vector<Eigen::Vector3d> drone_positions;
     std::vector<tf2::Quaternion> drone_orientations;
@@ -166,7 +166,7 @@ void Logger::clbk_timer(){
         avg_pos += pos;
     }
     avg_pos /= drone_positions.size();
-    avg_pos[2] -= 2.5;  // this->height_load_cs_rel_gnd - this->height_drone_cs_rel_gnd;
+    avg_pos[2] -= 2.45;  // this->height_load_cs_rel_gnd - this->height_drone_cs_rel_gnd;
 
     // Set position
     state_load_rel_world_qs.setPos(avg_pos);

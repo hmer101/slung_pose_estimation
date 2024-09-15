@@ -176,7 +176,7 @@ def plot_errors(time, pos_err, att_err, pos_err_qs, att_err_qs, title_font_size,
     plt.show()
 
 def plot_trans_geo(time, distTrans, distAngGeo, distTransQs, distAngGeoQs, title_font_size, axes_label_font_size, legend_font_size, ticks_font_size, x_ticks=None, y_ticks_1=None, y_ticks_2=None):
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(10, 6))
 
     # distTrans
     plt.subplot(2, 1, 1)
@@ -201,9 +201,9 @@ def plot_trans_geo(time, distTrans, distAngGeo, distTransQs, distAngGeoQs, title
     # distAngGeo
     plt.subplot(2, 1, 2)
     plt.plot(time, distAngGeo, label='Measured', color='red') #label='distAngGeo',
-    plt.plot(time, distAngGeoQs, label='Quasi-static', linestyle='dotted', color='red')
+    #plt.plot(time, distAngGeoQs, label='Quasi-static', linestyle='dotted', color='red')
     plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-    plt.ylabel('Geodesic Distance \n (Degrees)', fontsize=axes_label_font_size)
+    plt.ylabel('Geodesic Distance \n (degrees)', fontsize=axes_label_font_size)
     #plt.title('Geodesic Distance Attitude Measurement Error Over Time', fontsize=title_font_size)
     plt.text(0.0, 1.05, 'b)', transform=plt.gca().transAxes, fontsize=title_font_size, fontweight='bold')
     plt.legend(fontsize=legend_font_size, loc='upper right',)
@@ -219,6 +219,8 @@ def plot_trans_geo(time, distTrans, distAngGeo, distTransQs, distAngGeoQs, title
         plt.ylim(y_ticks_2[0], y_ticks_2[-1])
 
     plt.tight_layout()
+    #plt.subplots_adjust(hspace=0.5)
+    
     plt.show()
 
 def plot_trajectory(time, pos_drone_rel_world, rpy_drone_rel_world, pos_load_rel_world, rpy_load_rel_world, 
@@ -305,8 +307,8 @@ def process_data(time, rpy_gt, rpy, rpy_qs):
 
 def main():
     # Set parameters
-    title_font_size = 16
-    axes_label_font_size = 16
+    title_font_size = 22 #16
+    axes_label_font_size = 22 #16
     legend_font_size = 16
     ticks_font_size = 16
 
@@ -371,10 +373,14 @@ def main():
               
         # Get conglomorate metrics for distance from quasi-static
         print(f'Mean translational measurement error magnitude from ground truth: {np.mean(distTrans[i])} m')
+        print(f'Median translational measurement error magnitude from ground truth: {np.median(distTrans[i])} m')
         print(f'Mean translational distance magnitude of quasi-static from ground truth: {np.mean(distTransQs[i])} m')
+        print(f'Median translational distance magnitude of quasi-static from ground truth: {np.median(distTransQs[i])} m')
         
         print(f'Mean geodesic attitude measurement error from ground truth: {np.mean(distAngGeo[i])} deg')
+        print(f'Median geodesic attitude measurement error from ground truth: {np.median(distAngGeo[i])} deg')
         print(f'Mean geodesic attitude distance of quasi-static from ground truth: {np.mean(distAngGeoQs[i])} deg')
+        print(f'Median geodesic attitude distance of quasi-static from ground truth: {np.median(distAngGeoQs[i])} deg')
 
 
 if __name__ == '__main__':

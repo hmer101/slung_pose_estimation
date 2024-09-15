@@ -214,7 +214,7 @@ void Logger::log_poses(const std::string &filename, const droneState::State& sta
                 << rpy_load_rel_world_gt.x() << " " << rpy_load_rel_world_gt.y() << " " << rpy_load_rel_world_gt.z() << " "
                 << pos_err_load.x() << " " << pos_err_load.y() << " " << pos_err_load.z() << " "
                 << att_err_load.x() << " " << att_err_load.y() << " " << att_err_load.z() << " "
-                << distTransLoad << " " << distAngGeoLoad << " ";
+                << distTransLoad << " " << distAngGeoLoad << " "; //index 20
 
         // Log quasi-static load poses (note that an empty pose will be logged if qs was not published)
         logFile << pos_load_rel_world_qs.x() << " " << pos_load_rel_world_qs.y() << " " << pos_load_rel_world_qs.z() << " "
