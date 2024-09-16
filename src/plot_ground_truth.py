@@ -339,7 +339,7 @@ def plot_trans_geo_qs_dist(time, distTransLoadQs, distAngGeoLoadQs,
     plt.plot(time, distTransLoadQs*1000, color='red') #label='distTransLoad',
     #plt.plot(time, distAngGeoLoadQs, label='distAngGeoLoad', color='green')
     #plt.xlabel('Time (s)', fontsize=axes_label_font_size)
-    plt.ylabel('Distance (mm)', fontsize=axes_label_font_size)
+    plt.ylabel('Translation \n distance (mm)', fontsize=axes_label_font_size)
     #plt.title('Translational Distance', fontsize=title_font_size)
     plt.text(0.0, 1.05, 'a)', transform=plt.gca().transAxes, fontsize=title_font_size, fontweight='bold')
     #plt.legend(fontsize=legend_font_size, loc='upper right',)
